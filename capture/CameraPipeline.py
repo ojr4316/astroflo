@@ -1,18 +1,16 @@
 import cv2
 import numpy as np
 
-# TODO: Upgrade camera to interface
 class CameraPipeline:
     def __init__(self, camera):
         self.camera = camera
         self.camera.start()
  
-    def capture(self, exposure_time, gain, binning=1):
-        exposure_time = np.clip(exposure_time, 1e-6, 30.0)
-        gain = np.clip(gain, 1.0, 16.0)
-        binning = int(np.clip(binning, 1, 4))
- 
-        frame = self.camera.capture(exposure_time, gain, binning)
+    def capture(self, exposure_time, gain):
+
+        self.camera.configure(exposure_time, gain)
+
+        frame = self.camera.capture()
         return frame
         processed_frame = self._process_frame(frame)
  

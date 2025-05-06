@@ -1,4 +1,4 @@
-from capture.camera_controllers.Camera import Camera
+from camera_controllers.Camera import Camera
 import time
 import datetime
 import os
@@ -31,7 +31,7 @@ class RPiCamera(Camera):
         super().capture()
         
         frame = self.picam2.capture_array()
-    
+        self.last_metadata = self.picam2.capture_metadata()
         if self.save:
             self.save_frame(frame, self.current_params)
  
@@ -56,8 +56,14 @@ class RPiCamera(Camera):
         actual_gain = self.last_metadata.get("AnalogueGain", 0)
 
         attempts = 0
-        while actual_exp != goal_exposure and goal_gain != actual_gain and attempts < max_attempts:
-            _ = self.picam2.capture_array() # capture test frame
+        while (abs(goal_exposure-actual_exp) > 10 or abs(goal_gain-actual_gain) > 0.1) and attempts < max_attempts:
+            self.picam2.set_controls({
+                "ExposureTime": int(goal_exposure),
+                "AnalogueGain": float(goal_gain)
+            })
+            
+            time.sleep(0.2)  # Wait longer between attempts
+            _ = self.picam2.capture_array()  # capture test frame
             self.last_metadata = self.picam2.capture_metadata()
     
             actual_exp = self.last_metadata.get("ExposureTime", 0)

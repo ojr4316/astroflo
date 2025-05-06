@@ -2,6 +2,7 @@ import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 from CameraPipeline import CameraPipeline
+from camera_controllers.RPiCamera import RPiCamera
 
 def compare_images(images, titles):    
     n_images = len(images)
@@ -23,24 +24,25 @@ def compare_images(images, titles):
     plt.show()
  
 if __name__ == "__main__":
-    camera_interface = CameraPipeline()
+    camera_interface = CameraPipeline(RPiCamera())
  
     try:
         images = []
         titles = []
  
         print("\nTaking image with 0.2s exposure...")
-        image1 = camera_interface.capture(0.2, 1.0, 1)
+
+        image1 = camera_interface.capture(0.2, 1.0)
         images.append(image1)
         titles.append("0.2s, gain 1.0")
  
         print("\nTaking image with 0.6s exposure...")
-        image2 = camera_interface.capture(0.6, 1.0, 1)
+        image2 = camera_interface.capture(0.2, 4.0)
         images.append(image2)
         titles.append("0.6s, gain 1.0")
  
         print("\nTaking image with 0.8s exposure...")
-        image3 = camera_interface.capture(0.8, 1.0, 1)
+        image3 = camera_interface.capture(0.2, 8.0)
         images.append(image3)
         titles.append("0.8s, gain 1.0")
  

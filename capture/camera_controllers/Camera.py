@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 import os
 import cv2
 import datetime
+import threading
 
 class Camera(ABC):
 
@@ -9,18 +10,13 @@ class Camera(ABC):
         self.save_dir = save_dir
 
         self.running = False
+        self.lock = threading.Lock()
+
         self.save = False
         os.makedirs(self.save_dir, exist_ok=True)
 
         self.exposure = 1_000_000 #us
         self.gain = 1.0
-        self.binning = 1
-        
-        self.current_params = {
-            "exposure": 1_000_000,
-            "gain": 1.0,
-            "binning": 1
-        }
 
         self.last_metadata = None
 
@@ -29,18 +25,20 @@ class Camera(ABC):
         self.running = True
     
     @abstractmethod
-    def capture(self, exposure: int = 1_000_000, gain: float = 1.0, binning: int = 1):
-        self.current_params["exposure"] = exposure
-        self.current_params["gain"] = gain
-        self.current_params["binning"] = binning
+    def configure(self, exposure: int = 1_000_000, gain: float = 1.0):
+        self.exposure = exposure
+        self.gain = gain
 
+    @abstractmethod
+    def capture(self):
+       pass
+    
     @abstractmethod
     def stop(self):
         self.running = False
 
-    def save_frame(self, frame, params):
+    def save_frame(self, frame):
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        exp_ms = int(params["exposure_time"] * 1000)
         filename = os.path.join(
             self.save_dir, 
             f"{timestamp}.jpg"

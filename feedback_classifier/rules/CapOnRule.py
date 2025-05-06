@@ -1,5 +1,5 @@
-from metrics.QualityMetric import Metric
-from rules.ClassificationRule import ClassificationRule
+from feedback_classifier.metrics.QualityMetric import Metric
+from feedback_classifier.rules.ClassificationRule import ClassificationRule
 
 class CapOnRule(ClassificationRule):
     def __init__(self, min_stars: int = 7, min_snr: float = 2.0, priority: int = 100):

@@ -1,0 +1,3 @@
+# Raspberry Pi specific packages
+tflite-runtime
+picamera2

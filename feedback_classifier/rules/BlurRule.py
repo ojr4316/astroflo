@@ -1,5 +1,5 @@
-from metrics.QualityMetric import Metric
-from rules.ClassificationRule import ClassificationRule
+from feedback_classifier.metrics.QualityMetric import Metric
+from feedback_classifier.rules.ClassificationRule import ClassificationRule
 
 class BlurRule(ClassificationRule):
     def __init__(self, sharpness_threshold = 1e-3, priority: int = 10):

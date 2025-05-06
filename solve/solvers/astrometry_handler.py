@@ -39,35 +39,36 @@ class AstrometryNetSolver(Solver):
 
     def solve(self, image_path):
         cmd = self.build_cmd(image_path)
-        for c in cmd:
-            print(c, end=" ")
+
         try:
-            solve = subprocess.Popen(
-                cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True
-            )
-
-            highest_odds = float("-inf")
-
-            for line in solve.stdout:
-                print(line)
-                if "log-odds" in line:
-                    parts = line.strip().split(" ")
-                    odds = float(parts[2])
-                    if odds > highest_odds:
-                        highest_odds = odds
-                
-                if "RA,Dec = (" in line:
-                    #print(line)
-                    res = extract_coordinates(line)
-                    if res is not None:
-                        ra, dec, new_scale = res
-                        if abs(new_scale - self.scale) > self.scale_uncertainty:
-                            self.scale = new_scale
-                        return [cmd[-1], (ra, dec), highest_odds]
-            solve.wait()
+            result = self.run_solver(cmd)
+            if result is not None:
+                return result
         except subprocess.CalledProcessError:
             pass
         return [cmd[-1], "Failed"]
+
+    def run_solver(self, cmd):
+        solve = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True
+        )
+        highest_odds = float("-inf")
+        for line in solve.stdout:
+            if "log-odds" in line:
+                parts = line.strip().split(" ")
+                odds = float(parts[2])
+                if odds > highest_odds:
+                    highest_odds = odds
+            
+            if "RA,Dec = (" in line:
+                res = extract_coordinates(line)
+                if res is not None:
+                    ra, dec, new_scale = res
+                    if abs(new_scale - self.scale) > self.scale_uncertainty:
+                        self.scale = new_scale
+                    return [cmd[-1], (ra, dec), highest_odds]
+        solve.wait()
+        
 
 
     def build_scale(self, unit="arcsecperpix"):
@@ -101,7 +102,13 @@ class AstrometryNetSolver(Solver):
         cmd += self.build_downsample()
         cmd += self.build_depth()
 
-        cmd.append(image_path) # always add image path last
+
+         # always add image path last
+        if os.name == 'nt':
+            cmd.append(wsl_path(image_path)) # On windows, should use mounted path
+        else:
+            cmd.append(image_path)
+
 
         return cmd
 
@@ -123,3 +130,6 @@ def extract_coordinates(line):
         return ra, dec, scale
     else:
         return None
+    
+def wsl_path(path):
+    return path.replace("\\", "/").replace("C:", "/mnt/c")

@@ -1,4 +1,4 @@
-from metrics.QualityMetric import QualityMetric, Metric
+from feedback_classifier.metrics.QualityMetric import QualityMetric, Metric
 from photutils.detection import DAOStarFinder
 import numpy as np
 

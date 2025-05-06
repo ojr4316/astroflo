@@ -1,5 +1,5 @@
-from metrics.QualityMetric import Metric
-from rules.ClassificationRule import ClassificationRule
+from feedback_classifier.metrics.QualityMetric import Metric
+from feedback_classifier.rules.ClassificationRule import ClassificationRule
 
 class ObjectBlockingField(ClassificationRule):
     def __init__(self, min_stars: int = 10, min_brightness: float = 1e-2, priority: int = 5):

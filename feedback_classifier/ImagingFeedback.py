@@ -1,14 +1,15 @@
 """ Rule-based feedback for astronomical imaging """
 import numpy as np
-from metrics.QualityMetric import QualityMetric, Mean, StdDev, Saturated, Sharpness, SignalToNoiseRatio
-from metrics.StarCount import StarCount
-from rules.ClassificationRule import ClassificationRule
-from rules.CapOnRule import CapOnRule
-from rules.OverExposedRule import OverExposedRule
-from rules.BlurRule import BlurRule
-from rules.ObjectBlockingField import ObjectBlockingField
 import cv2
 from typing import Dict, List, Tuple
+
+from feedback_classifier.metrics.QualityMetric import QualityMetric, Mean, StdDev, Saturated, Sharpness, SignalToNoiseRatio
+from feedback_classifier.metrics.StarCount import StarCount
+from feedback_classifier.rules.ClassificationRule import ClassificationRule
+from feedback_classifier.rules.CapOnRule import CapOnRule
+from feedback_classifier.rules.OverExposedRule import OverExposedRule
+from feedback_classifier.rules.BlurRule import BlurRule
+from feedback_classifier.rules.ObjectBlockingField import ObjectBlockingField
 
 
 class ImagingFeedback:

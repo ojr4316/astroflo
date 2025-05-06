@@ -24,8 +24,11 @@ class FakeCamera(Camera):
         img = np.random.randint(0, 256, (height, width, 3), dtype=np.uint8)
         return Image.fromarray(img)
 
-    def capture(self, exposure: int = 1_000_000, gain: float = 1.0):
-        super().capture(exposure, gain)
+    def configure(self, exposure: int = 1_000_000, gain: float = 1.0):
+        super().configure(exposure, gain)
+
+    def capture(self):
+        super().capture()
         if not self.running:
             raise RuntimeError("Camera is not running. Please start the camera before capturing.")
 

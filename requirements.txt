@@ -1,0 +1,8 @@
+numpy
+opencv-python
+requests  # For making HTTP requests (if needed)
+Pillow     # For image processing (if needed, in addition to or instead of OpenCV)
+matplotlib # For plotting and visualization (if needed)
+scipy      # For scientific computing (if needed)
+tflite-runtime
+picamera2

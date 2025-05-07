@@ -2,7 +2,8 @@ import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 from CameraPipeline import CameraPipeline
-from camera_controllers.RPiCamera import RPiCamera
+from camera_controllers.FakeCamera import FakeCamera
+#from camera_controllers.RPiCamera import RPiCamera
 
 def compare_images(images, titles):    
     n_images = len(images)
@@ -24,7 +25,7 @@ def compare_images(images, titles):
     plt.show()
  
 if __name__ == "__main__":
-    camera_interface = CameraPipeline(RPiCamera())
+    camera_interface = CameraPipeline(FakeCamera())
  
     try:
         images = []

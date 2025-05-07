@@ -1,16 +1,18 @@
-from camera_controllers.FakeCamera import FakeCamera
 import matplotlib.pyplot as plt
 import os
-from CameraPipeline import CameraPipeline
-from camera_controllers.RPiCamera import RPiCamera
 import time 
+from CameraPipeline import CameraPipeline
+from camera_controllers.FakeCamera import FakeCamera
+#from camera_controllers.RPiCamera import RPiCamera
+
+
 def main():
     img_dir = os.path.dirname(os.path.abspath(__file__))
     file = os.path.normpath(os.path.join(img_dir, "..", "test_data", "test.jpg"))
 
     fake_feed = [plt.imread(file)]
 
-    cam = RPiCamera()
+    cam = CameraPipeline(FakeCamera(fake_feed))
 
     cam.start()
     idx = 1

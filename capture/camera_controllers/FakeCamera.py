@@ -1,6 +1,7 @@
-from camera_controllers.Camera import Camera
+from capture.camera_controllers.Camera import Camera
 import numpy as np
 from PIL import Image
+import time
 
 class FakeCamera(Camera):
 
@@ -29,6 +30,7 @@ class FakeCamera(Camera):
 
     def capture(self):
         super().capture()
+        time.sleep(self.exposure / 1e6)
         if not self.running:
             raise RuntimeError("Camera is not running. Please start the camera before capturing.")
 
@@ -40,5 +42,7 @@ class FakeCamera(Camera):
         else:
             fake_image = self._generate_fake_image()        
 
-        return fake_image
+        path = self.save_frame(fake_image)
+
+        return path
 

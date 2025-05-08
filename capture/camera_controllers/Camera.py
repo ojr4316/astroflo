@@ -44,4 +44,5 @@ class Camera(ABC):
             f"{timestamp}.jpg"
         )
         cv2.imwrite(filename, cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
+        return filename
  

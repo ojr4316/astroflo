@@ -2,7 +2,7 @@ import subprocess
 import re
 import os
 
-from solvers.Solver import Solver
+from solve.solvers.Solver import Solver
 
 base_cmd = [ "solve-field", "--overwrite", "--no-plots",
         "--new-fits", "none",
@@ -54,6 +54,7 @@ class AstrometryNetSolver(Solver):
         )
         highest_odds = float("-inf")
         for line in solve.stdout:
+            #print(line)
             if "log-odds" in line:
                 parts = line.strip().split(" ")
                 odds = float(parts[2])

@@ -1,4 +1,4 @@
-from capture.camera_controllers.Camera import Camera
+from capture.Camera import Camera
 import numpy as np
 from PIL import Image
 import time
@@ -42,7 +42,6 @@ class FakeCamera(Camera):
         else:
             fake_image = self._generate_fake_image()        
 
-        path = self.save_frame(fake_image)
-
+        path = self.save_frame(np.array(fake_image))
         return path
 

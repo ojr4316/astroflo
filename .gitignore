@@ -1,6 +1,6 @@
-data/
 captures/**
 **/none
 **/.DS_Store
 **/__pycache__/
 **/.pytest_cache/
+**/*.bsp

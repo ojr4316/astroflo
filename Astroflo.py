@@ -4,10 +4,8 @@ from threading import Thread, Lock
 import time
 import os
 from datetime import datetime
-from capture.CameraPipeline import CameraPipeline
-from solve.SolvePipeline import SolvePipeline
-from capture.camera_controllers.Camera import Camera
-from solve.solvers.Solver import Solver
+from capture.Camera import Camera
+from solve.Solver import Solver
 from clean.ImageProcessor import ImageProcessor
 
 class Astroflo:
@@ -18,8 +16,6 @@ class Astroflo:
     def __init__(self, capturer: Camera, solver: Solver, processors: Optional[List[ImageProcessor]] = None):
         self.capturer = capturer
         self.solver = solver
-        self.capture_pipeline = CameraPipeline(capturer)
-        self.solve_pipeline = SolvePipeline(solver)
         self.processors = processors or []
         
         self.latest = None
@@ -33,6 +29,7 @@ class Astroflo:
     
     def start(self):
         self.running = True
+        self.capturer.start()
         self.capture_thread.start()
         print("Astroflo started!~")
    
@@ -44,7 +41,7 @@ class Astroflo:
     
     def _capture_loop(self):
         while self.running:
-            img = self.capture_pipeline.capture()
+            img = self.capturer.capture()
             if img is not None:
                 timestamp = datetime.now()
                 Thread(target=self._process_image, args=(img, timestamp), daemon=True).start()
@@ -55,7 +52,7 @@ class Astroflo:
             for processor in self.processors:
                 processed_img = processor.process(processed_img)
             
-            result = self.solve_pipeline.solve(processed_img)
+            result = self.solver.solve(processed_img)
             
             with self.state_lock:
                 if not self.latest_timestamp or timestamp > self.latest_timestamp:

@@ -2,7 +2,7 @@ import subprocess
 import re
 import os
 
-from solve.solvers.Solver import Solver
+from solve.Solver import Solver
 
 base_cmd = [ "solve-field", "--overwrite", "--no-plots",
         "--new-fits", "none",
@@ -70,7 +70,6 @@ class AstrometryNetSolver(Solver):
                     return [cmd[-1], (ra, dec), highest_odds]
         solve.wait()
         
-
 
     def build_scale(self, unit="arcsecperpix"):
         if self.scale is None:

@@ -13,8 +13,7 @@ from solve.astrometry_handler import AstrometryNetSolver
 from astronomy.field import create_telescope_field
 from astronomy.Telescope import Telescope
 
-from hardware.display import ScreenRenderer
-
+from hardware.ui import UIManager
 
 def build_camera():
     if os.name == "nt" or os.name == "posix":
@@ -59,5 +58,17 @@ def main():
     img = screen.render_image_with_caption(image, f"RA: {ra:.4f}              DEC: {dec:.4f}")
     img.show()
 
+def render():
+    scope = Telescope(
+        aperature=200,
+        focal_length=1200,
+        eyepiece=25,
+        eyepiece_fov=40,
+    )
+
+    ui = UIManager(scope)
+    ui.loop()
+
 if __name__ == "__main__":
-    main()
+    render()
+    #main()

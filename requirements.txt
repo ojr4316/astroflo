@@ -6,3 +6,5 @@ matplotlib
 scipy
 photutils
 pytest
+skyfield
+starplot

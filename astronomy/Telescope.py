@@ -47,3 +47,15 @@ class Telescope:
         limiting_magnitude = 7.5 + 5 * (aperture_inches / 4) ** 0.5
         return limiting_magnitude
     
+    def modify(self, idx, increase=False):
+        match(idx):
+            case 0: self.aperture += (1 if increase else -1)
+            case 1: self.focal_length += (1 if increase else -1)
+            case 2: self.eyepiece += (1 if increase else -1)
+            case 3: self.eyepiece_fov += (1 if increase else -1)
+
+    def get_settings(self):
+        return {"aperture": self.aperture, "focal_length": self.focal_length, "eyepiece": self.eyepiece, "eyepiece_fov": self.eyepiece_fov}
+    
+    def get_cam_settings(self):
+        return {"x_offset": f"{self.camera_offset[0]:.1f}", "y_offset": f"{self.camera_offset[1]:.1f}"}

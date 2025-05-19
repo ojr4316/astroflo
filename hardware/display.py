@@ -15,6 +15,9 @@ class ScreenRenderer:
         self.small_font = ImageFont.truetype(self.FONT_PATH, 12)
         self.large_font = ImageFont.truetype(self.FONT_PATH, 24)
 
+    def _transform(self, img):
+        return img.rotate(-90)
+
     def render_image_with_caption(self, image: Image.Image, caption: str) -> Image.Image:
         img = Image.new("RGB", (self.WIDTH, self.HEIGHT), self.COLOR_BLACK)
         draw = ImageDraw.Draw(img)
@@ -23,20 +26,28 @@ class ScreenRenderer:
         bbox = draw.textbbox((0, 0), caption, font=self.font)
         w, h = bbox[2] - bbox[0], bbox[3] - bbox[1]
         draw.text((1, 0), caption, font=self.font, fill=self.COLOR_GRAY)
-        return img
+        return self._transform(img)
 
-    def render_menu(self, question: str, buttons: list, selected_idx: int) -> Image.Image:
+    def render_menu(self, question: str, buttons: list, selected_idx: int, has_back: bool = False) -> Image.Image:
         btn_height = 36
         btn_margin = 8
 
         img = Image.new("RGB", (self.WIDTH, self.HEIGHT), self.COLOR_BLACK)
         draw = ImageDraw.Draw(img)
+
+        if has_back:
+            # Draw back button
+            back_rect = [10, 10, 70, 40]
+            color = self.BTN_SELECTED_COLOR if selected_idx == 0 else self.BTN_COLOR
+            draw.rounded_rectangle(back_rect, radius=8, fill=color)
+            draw.text((20, 18), "< Back", font=self.small_font, fill=self.COLOR_WHITE)
+
         # Draw question
-        draw.text((10, 10), question, font=self.large_font, fill=self.COLOR_WHITE)
+        draw.text((120 if has_back else 10, 10), question, font=self.large_font, fill=self.COLOR_WHITE)
         
         # Draw buttons - all the same size now
         y = 50
-        for idx, label in enumerate(buttons):
+        for idx, label in enumerate(buttons, 1 if has_back else 0):
             rect = [20, y, self.WIDTH-20, y+btn_height]
             color = self.BTN_SELECTED_COLOR if idx == selected_idx else self.BTN_COLOR
             draw.rounded_rectangle(rect, radius=8, fill=color)
@@ -45,7 +56,7 @@ class ScreenRenderer:
             draw.text((self.WIDTH//2 - w//2, y + (btn_height-h)//2), label, font=self.font, fill=self.COLOR_WHITE)
             y += btn_height + btn_margin
         
-        return img
+        return self._transform(img)
 
     def render_settings(self, fields: dict, selected_idx: int) -> Image.Image:
         img = Image.new("RGB", (self.WIDTH, self.HEIGHT), self.COLOR_BLACK)
@@ -81,7 +92,7 @@ class ScreenRenderer:
 
             y += btn_height + btn_margin
             
-        return img
+        return self._transform(img)
 
 # Example usage:
 #renderer = ScreenRenderer()

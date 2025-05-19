@@ -23,6 +23,8 @@ class Telescope:
         self.location = rochester
 
         self.speed = 0
+
+        self.load_settings()
        
     def set_camera_offset(self, x: float, y: float):
         self.camera_offset = (x, y)
@@ -53,9 +55,30 @@ class Telescope:
             case 1: self.focal_length += (1 if increase else -1)
             case 2: self.eyepiece += (1 if increase else -1)
             case 3: self.eyepiece_fov += (1 if increase else -1)
+        self.save_settings()
 
     def get_settings(self):
         return {"aperture": self.aperture, "focal_length": self.focal_length, "eyepiece": self.eyepiece, "eyepiece_fov": self.eyepiece_fov}
     
     def get_cam_settings(self):
         return {"x_offset": f"{self.camera_offset[0]:.1f}", "y_offset": f"{self.camera_offset[1]:.1f}"}
+    
+    def save_settings(self):
+        settings = self.get_settings().update(self.get_cam_settings())
+        with open("settings.txt", "w") as f:
+            for key, value in settings.items():
+                f.write(f"{key}: {value}\n")
+        print("Settings saved to settings.txt")
+
+    def load_settings(self):
+        settings = {}
+        with open("settings.txt", "r") as f:
+            for line in f:
+                key, value = line.strip().split(": ")
+                settings[key] = value
+        self.aperture = int(settings["aperture"])
+        self.focal_length = int(settings["focal_length"])
+        self.eyepiece = int(settings["eyepiece"])
+        self.eyepiece_fov = int(settings["eyepiece_fov"])
+        self.camera_offset = (float(settings["x_offset"]), float(settings["y_offset"]))
+        print("Settings loaded from settings.txt")

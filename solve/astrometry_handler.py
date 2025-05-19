@@ -28,7 +28,7 @@ class AstrometryNetSolver(Solver):
         self.scale_uncertainty = 0.5
 
         # Limits for solving
-        self.limit = 120
+        self.limit = 10
         self.min_limit = 1
         self.max_limit = 60
 

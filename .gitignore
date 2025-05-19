@@ -4,3 +4,4 @@ captures/**
 **/__pycache__/
 **/.pytest_cache/
 **/*.bsp
+**/.lgd-nfy0

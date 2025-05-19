@@ -25,7 +25,7 @@ class Camera(ABC):
         self.running = True
     
     @abstractmethod
-    def configure(self, exposure: int = 1_000_000, gain: float = 1.0):
+    def configure(self, exposure: int = 1_000_000, gain: float = 16.0):
         self.exposure = exposure
         self.gain = gain
 

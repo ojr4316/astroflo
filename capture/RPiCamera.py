@@ -31,14 +31,12 @@ class RPiCamera(Camera):
         super().capture()
         
         frame = self.picam2.capture_array()
-        self.last_metadata = self.picam2.capture_metadata()
-        if self.save:
-            self.save_frame(frame, self.current_params)
+        self.last_metadata = self.picam2.capture_metadata()            
  
-        return frame
+        return self.save_frame(frame)
  
 
-    def configure(self, goal_exposure, goal_gain, max_attempts=10):
+    def configure(self, goal_exposure, goal_gain=16, max_attempts=10):
         super().configure(goal_exposure, goal_gain)
         self.picam2.set_controls({
             "AeEnable": False,

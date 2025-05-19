@@ -1,3 +1,4 @@
+""" Handles rendering of all UIs """
 from PIL import Image, ImageDraw, ImageFont
 import matplotlib.font_manager as fm
 

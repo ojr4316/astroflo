@@ -30,6 +30,9 @@ class Astroflo:
     def start(self):
         self.running = True
         self.capturer.start()
+        self.capturer.configure(3_000_000)
+        # TODO: configure camera reasonably
+        # TODO: configure sovler reasonably
         self.capture_thread.start()
         print("Astroflo started!~")
    
@@ -53,23 +56,23 @@ class Astroflo:
                 processed_img = processor.process(processed_img)
             
             result = self.solver.solve(processed_img)
-            
+
             with self.state_lock:
-                if not self.latest_timestamp or timestamp > self.latest_timestamp:
+                if (not self.latest_timestamp or timestamp > self.latest_timestamp) and result[1] != 'Failed':
                     self.latest = {
                         'result': result,
                         'timestamp': timestamp
                     }
                     self.latest_timestamp = timestamp
                     
-                    # Discard image
+                    
                     image, coord, odds = result
-                    os.remove(f"./{image}")
                     print("New result found!")
-
-
                 else:
                     print(f"Discarded older result from {timestamp}")
+                    image, failed = result
+                print(image)
+                os.remove(f"./{image}") # Discard image
         except Exception as e:
             print(f"Error processing image from {timestamp}: {e}")
     

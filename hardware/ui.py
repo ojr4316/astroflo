@@ -1,3 +1,4 @@
+""" State Manager for UI, Controls creating and rendering images, and managing input """
 import time
 from enum import Enum
 from PIL import Image

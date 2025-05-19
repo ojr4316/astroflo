@@ -5,3 +5,4 @@ captures/**
 **/.pytest_cache/
 **/*.bsp
 **/.lgd-nfy0
+**/.vscode/

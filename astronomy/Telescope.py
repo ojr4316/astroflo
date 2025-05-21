@@ -1,3 +1,5 @@
+import os
+from astronomy.target import TargetManager
 from astropy.coordinates import AltAz, EarthLocation, SkyCoord, Angle
 import astropy.units as u
 
@@ -21,7 +23,7 @@ class Telescope:
         self.camera_offset = (0, 0)
 
         self.location = rochester
-
+        self.target_manager = TargetManager(rochester)
         self.speed = 0
 
         self.load_settings()
@@ -71,6 +73,8 @@ class Telescope:
         print("Settings saved to settings.txt")
 
     def load_settings(self):
+        if not os.path.exists("settings.txt"):
+            return
         settings = {}
         with open("settings.txt", "r") as f:
             for line in f:

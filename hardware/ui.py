@@ -4,7 +4,7 @@ from enum import Enum
 from PIL import Image
 
 from hardware.display import ScreenRenderer
-from hardware.screen import Screen
+#from hardware.screen import Screen
 from hardware.input import Input
 from astronomy.Telescope import Telescope
 
@@ -22,7 +22,7 @@ class UIManager:
         self.state = ScreenState.MAIN_MENU
         self.renderer = ScreenRenderer()
         self.input = Input()
-        self.screen = Screen()
+        #self.screen = Screen()
 
         self.selected = 0
         self.max_idx = 2
@@ -121,8 +121,9 @@ class UIManager:
         return self.renderer.render_settings(self.scope.get_cam_settings(), self.selected)
 
     def render_target_lists(self):
-        lists = ["by Constellation", "Messier", "Solar System", "NGC"]
-        self.max_idx = 4
+        lists = self.scope.target_manager.catalog_loader.get_catalogs()
+        print(lists)
+        self.max_idx = len(lists) - 1
         return self.renderer.render_menu("Catalog?", lists, self.selected, True)
     
     def render_target_select(self):
@@ -154,7 +155,7 @@ class UIManager:
             #case ScreenState.TARGET_LIST: return self.
 
     def loop(self):
-
+        return
         while True:
             self.screen.draw_screen(self.render())
             self.screen.handle_input(self.input)

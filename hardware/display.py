@@ -32,30 +32,64 @@ class ScreenRenderer:
     def render_menu(self, question: str, buttons: list, selected_idx: int, has_back: bool = False) -> Image.Image:
         btn_height = 36
         btn_margin = 8
+        header_height = 50
 
         img = Image.new("RGB", (self.WIDTH, self.HEIGHT), self.COLOR_BLACK)
         draw = ImageDraw.Draw(img)
-
+                
         if has_back:
-            # Draw back button
             back_rect = [10, 10, 70, 40]
             color = self.BTN_SELECTED_COLOR if selected_idx == 0 else self.BTN_COLOR
             draw.rounded_rectangle(back_rect, radius=8, fill=color)
             draw.text((20, 18), "< Back", font=self.small_font, fill=self.COLOR_WHITE)
-
-        # Draw question
+        
+        # Draw question - always at the top
         draw.text((120 if has_back else 10, 10), question, font=self.large_font, fill=self.COLOR_WHITE)
         
-        # Draw buttons - all the same size now
-        y = 50
-        for idx, label in enumerate(buttons, 1 if has_back else 0):
+        # Calculate visible buttons based on selected index
+        buttons_per_page = (self.HEIGHT - header_height) // (btn_height + btn_margin)
+        start_idx = 0
+        
+        # Calculate which page of buttons to show based on the selected index
+        if len(buttons) > buttons_per_page:
+            page_number = selected_idx // buttons_per_page
+            start_idx = page_number * buttons_per_page
+        
+        # Draw visible buttons
+        y = header_height
+        for i in range(min(buttons_per_page, len(buttons) - start_idx)):
+            idx = i + start_idx + (1 if has_back else 0)
+            label = buttons[idx - (1 if has_back else 0)]
+            
             rect = [20, y, self.WIDTH-20, y+btn_height]
             color = self.BTN_SELECTED_COLOR if idx == selected_idx else self.BTN_COLOR
             draw.rounded_rectangle(rect, radius=8, fill=color)
+            
             bbox = draw.textbbox((0, 0), label, font=self.font)
             w, h = bbox[2] - bbox[0], bbox[3] - bbox[1]
-            draw.text((self.WIDTH//2 - w//2, y + (btn_height-h)//2), label, font=self.font, fill=self.COLOR_WHITE)
+            draw.text((self.WIDTH//2 - w//2, y + (btn_height-h)//2), label, 
+                    font=self.font, fill=self.COLOR_WHITE)
+            
             y += btn_height + btn_margin
+        
+        # Draw scroll indicators if needed
+        if len(buttons) > buttons_per_page:
+            current_page = selected_idx // buttons_per_page
+            total_pages = (len(buttons) + buttons_per_page - 1) // buttons_per_page
+            
+            # Show page indicator
+            page_text = f"{current_page + 1}/{total_pages}"
+            bbox = draw.textbbox((0, 0), page_text, font=self.small_font)
+            w, h = bbox[2] - bbox[0], bbox[3] - bbox[1]
+            draw.text((self.WIDTH - w - 2, 2), page_text, font=self.small_font, fill=self.COLOR_WHITE)
+            
+            # Up arrow if not on first page
+            if current_page > 0:
+                draw.text((self.WIDTH - 30, header_height), "▲", font=self.font, fill=self.COLOR_WHITE)
+            
+            # Down arrow if not on last page
+            if current_page < total_pages - 1:
+                draw.text((self.WIDTH - 30, self.HEIGHT - 30), "▼", font=self.font, fill=self.COLOR_WHITE)
         
         return self._transform(img)
 
@@ -96,6 +130,6 @@ class ScreenRenderer:
         return self._transform(img)
 
 # Example usage:
-#renderer = ScreenRenderer()
-#img = renderer.render_menu("ASTROFLO MENU", ["Set Camera Offset", "Configure Telescope", "Navigate"], selected_idx=2)
-#img.show()
+renderer = ScreenRenderer()
+img = renderer.render_menu("ASTROFLO MENU", ["Set Camera Offset", "Configure Telescope", "Navigate", "EEE", "EEE2", "EE3"], selected_idx=3)
+img.show()

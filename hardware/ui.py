@@ -127,8 +127,8 @@ class UIManager:
         return self.renderer.render_menu("Catalog?", lists, self.selected, True)
     
     def render_target_select(self):
-        lists = ["load", "target", "list"]
-        self.max_idx = 3 # set later
+        lists = self.scope.target_manager.get_catalog()
+        self.max_idx = len(lists) - 1
         return self.renderer.render_menu("Target?", lists, self.selected, True)
 
     def render_navigation(self):

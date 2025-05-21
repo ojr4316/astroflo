@@ -65,9 +65,9 @@ class ScreenRenderer:
             color = self.BTN_SELECTED_COLOR if idx == selected_idx else self.BTN_COLOR
             draw.rounded_rectangle(rect, radius=8, fill=color)
             
-            bbox = draw.textbbox((0, 0), label, font=self.font)
+            bbox = draw.textbbox((0, 0), str(label), font=self.font)
             w, h = bbox[2] - bbox[0], bbox[3] - bbox[1]
-            draw.text((self.WIDTH//2 - w//2, y + (btn_height-h)//2), label, 
+            draw.text((self.WIDTH//2 - w//2, y + (btn_height-h)//2), str(label),  
                     font=self.font, fill=self.COLOR_WHITE)
             
             y += btn_height + btn_margin
@@ -130,6 +130,6 @@ class ScreenRenderer:
         return self._transform(img)
 
 # Example usage:
-renderer = ScreenRenderer()
-img = renderer.render_menu("ASTROFLO MENU", ["Set Camera Offset", "Configure Telescope", "Navigate", "EEE", "EEE2", "EE3"], selected_idx=3)
-img.show()
+#renderer = ScreenRenderer()
+#img = renderer.render_menu("ASTROFLO MENU", ["Set Camera Offset", "Configure Telescope", "Navigate", "EEE", "EEE2", "EE3"], selected_idx=3)
+#img.show()

@@ -9,6 +9,7 @@ if __name__ == "__main__":
         eyepiece_fov=40,)
     ui = UIManager(scope)
     ui.state = ScreenState.TARGET_SELECT
+    scope.target_manager.catalog = "messier"
 
     img = ui.render()
     img.show()

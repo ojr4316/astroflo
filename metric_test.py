@@ -33,3 +33,15 @@ def test_no_classification():
         test_image = np.mean(test_image, axis=2)
     classification, metrics = classifier.classify(test_image)
     assert classification == "NONE", f"Expected 'NONE', got {classification}"
+
+test_image = plt.imread(os.path.join(image_dir, "test_data", "image.jpg"))
+if test_image.ndim == 3:
+    test_image = np.mean(test_image, axis=2)
+classification, metrics = classifier.classify(test_image)
+assert classification == "CapOnRule", f"Expected 'CapOnRule', got {classification}"
+
+test_image = plt.imread(os.path.join(image_dir, "test_data", "output_0.jpg"))
+if test_image.ndim == 3:
+    test_image = np.mean(test_image, axis=2)
+classification, metrics = classifier.classify(test_image)
+assert classification == "NONE", f"Expected 'NONE', got {classification}"

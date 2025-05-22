@@ -1,23 +1,20 @@
-from datetime import datetime
-from pytz import timezone
-from starplot import OpticPlot, DSO, _
-from starplot.styles import PlotStyle, extensions, LabelStyle, ZOrderEnum, ObjectStyle, MarkerStyle, FillStyleEnum, FontWeightEnum, MarkerSymbolEnum
-from starplot.optics import Scope, Reflector
+import math
+from starplot import OpticPlot, _
+from starplot.styles import PlotStyle, LabelStyle, ZOrderEnum, ObjectStyle, MarkerStyle, FillStyleEnum, MarkerSymbolEnum
 from astropy.coordinates import SkyCoord
-from skyfield.api import load, wgs84
-from skyfield.units import Angle
-import matplotlib.pyplot as plt
-
+from skyfield.api import load
+import numpy as np
 from astronomy.Telescope import Telescope
+import astropy.units as u
 
 common_font = {
-    "font_size": 80,
+    "font_size": 6,
     "font_color": "#ffffff",
     "font_weight": "normal"
 }
 
 big_font = {
-    "font_size": 108,
+    "font_size": 8,
     "font_color": "#ffffff",
     "font_weight": "bold"
 }
@@ -32,34 +29,34 @@ style_overrides = {
     "info_text": common_font.copy(),
 
     # Nearby
-    "planets": {"label": big_font.copy(), "marker": {"color": "#ff0000", "size": 80}},
+    "planets": {"label": big_font.copy(), "marker": {"color": "#ff0000", "size": 5}},
     "moon": {"label": common_font.copy()},
     "sun": {"label": common_font.copy()},
 
     # DSOs
     "dso_galaxy": {
         "label": common_font.copy(),
-        "marker": {"size": 80, "color": "#004800", "alpha": 0.5}
+        "marker": {"size": 1, "color": "#004800", "alpha": 0.5}
     },
     "dso_nebula": {
         "label": common_font.copy(),
-        "marker": {"size": 70, "color": "#9900FF", "alpha": 0.5}
+        "marker": {"size": 1, "color": "#9900FF", "alpha": 0.5}
     },
     "dso_open_cluster": {
         "label": common_font.copy(),
-        "marker": {"size": 60, "color": "#93A600", "alpha": 0.7}
+        "marker": {"size": 1, "color": "#93A600", "alpha": 0.7}
     },
     "dso_globular_cluster": {
         "label": common_font.copy(),
-        "marker": {"size": 65, "color": "#EEFF00", "alpha": 0.7}
+        "marker": {"size": 1, "color": "#EEFF00", "alpha": 0.7}
     },
     "dso_planetary_nebula": {
         "label": common_font.copy(),
-        "marker": {"size": 55, "color": "#FF00D9", "alpha": 0.7}
+        "marker": {"size": 1, "color": "#FF00D9", "alpha": 0.7}
     },
     "dso_double_star": {
         "label": common_font.copy(),
-        "marker": {"size": 50, "color": "#FFBF00"}
+        "marker": {"size": 1, "color": "#FFBF00"}
     },
 
     # Feature labels
@@ -71,15 +68,7 @@ style_overrides = {
 
 }
 
-class FieldGenerator:
-    pass
-
-def create_telescope_field(telescope: Telescope, t=None, resolution=240):
-    ts = load.timescale()
-    if t is None:
-        t = ts.now()
-
-    style = PlotStyle(background_color="#200000",
+style = PlotStyle(background_color="#200000",
                       figure_background_color="#000",
                       border_bg_color="#000",
 
@@ -87,7 +76,7 @@ def create_telescope_field(telescope: Telescope, t=None, resolution=240):
                           marker=MarkerStyle(
                               fill=FillStyleEnum.FULL,
                               zorder=ZOrderEnum.LAYER_3,
-                              size=40,
+                              size=10,
                               edge_color=None,
                               color="#fff"
                           ),
@@ -101,82 +90,138 @@ def create_telescope_field(telescope: Telescope, t=None, resolution=240):
                           ),
                       )).extend(style_overrides)
 
-    optic = Reflector(
-        telescope.focal_length,
-        telescope.eyepiece,
-        telescope.eyepiece_fov,
+ephemeris = 'de440s.bsp'
+planets = load(ephemeris)
+ts = load.timescale()
+
+def calculate_arrow_params(center_ra, center_dec, target_ra, target_dec, fov_radius):
+    dra = (target_ra - center_ra) * math.cos(math.radians(center_dec))
+    ddec = target_dec - center_dec
+    distance = math.sqrt(dra**2 + ddec**2)
+
+    if distance == 0:
+        return center_ra, center_dec, 0.1, 0
+
+    unit_dra = dra / distance
+    unit_ddec = ddec / distance
+
+    min_dist = 0.8
+    max_dist = 200
+
+    norm = math.log10(max(distance, min_dist)) / math.log10(max_dist)
+    norm = min(max(norm, 0), 1)
+
+    max_arrow_length = fov_radius * 0.55
+    min_arrow_length = 0.1
+
+    arrow_length = max(norm * max_arrow_length, min_arrow_length)
+
+    dx = unit_dra * arrow_length
+    dy = unit_ddec * arrow_length
+
+    print(f"[Arrow] Distance: {distance:.2f}, Scaled arrow length: {arrow_length:.4f}")
+
+    return center_ra, center_dec, dx, dy
+
+def add_off_field_arrow(plot, center_ra, center_dec, target_ra, target_dec, fov_radius,
+                       color="#05ffff", label=None):
+    x, y, dx, dy = calculate_arrow_params(center_ra, center_dec, target_ra, target_dec, fov_radius)
+    
+    # Draw line
+    plot.line(
+        coordinates=[(x, y), (x + dx, y + dy)],
+        style={"color": color, "width": 3, "alpha": 0.5},
+    )
+    
+    plot.marker(
+        ra=x + dx,
+        dec=y + dy,
+        style={
+            "marker": {
+                "size": 8,
+                "symbol": MarkerSymbolEnum.CIRCLE,
+                "color": color,
+                "alpha": 0.5
+            },
+        },
+        label="",
     )
 
-    plot = OpticPlot(
-        ra=telescope.position[0],
-        dec=telescope.position[1],
-        lat=telescope.location.lat.degree,
-        lon=telescope.location.lon.degree,
-        dt=t.utc_datetime(),
-        style=style,
-        resolution=resolution,
-        autoscale=True,
-        optic=optic
-    )
+def add_target_indicator(plot, target_ra, target_dec, fov_radius, color="#05ffff"):
+    center_ra, center_dec = plot.ra, plot.dec
+    in_field = plot.in_bounds(target_ra, target_dec)
+    
+    if in_field:
+        plot.marker(
+            ra=target_ra,
+            dec=target_dec,
+            style={
+                "marker": {
+                    "size": 10,
+                    "symbol": "circle",
+                    "fill": "full",
+                    "color": color,
+                    "edge_color": "#e0c1e0",
+                    "alpha": 0.2
+                },
+                "label": {
+                    "font_size": 100,
+                    "font_weight": "bold",
+                    "font_color": "#ffffff",
+                    "font_alpha": 1,
+                    "font_family": "monospace",
+                    "zorder": ZOrderEnum.LAYER_3,
+                    "offset_x": "auto",
+                    "offset_y": "auto",
+                },
+            }
+        )
+    else:
+        add_off_field_arrow(plot, center_ra, center_dec, target_ra, target_dec, fov_radius, color)
 
-    magnification = telescope.focal_length / telescope.eyepiece
-    print(f"Magnification: {magnification:.1f}x")
-    aperture_inches = telescope.focal_length / (7 * 25.4)
-    limiting_magnitude = 7.5 + 5 * (aperture_inches / 4) ** 0.5
-    print(f"Limiting magnitude: {limiting_magnitude:.2f}")
+def enhance_telescope_field(telescope, plot=None):
+    if plot is None:
+        plot = create_telescope_field(telescope)
+    
+    if telescope.target_manager.target is not None:
+        target = telescope.target_manager.target
 
-    plot.stars(
-        size_fn=lambda star: 1000 * (limiting_magnitude - star.magnitude),
-        alpha_fn=lambda star: 1 - (star.magnitude/limiting_magnitude),
-        catalog='big-sky')
-
-    # Add any DSOs in the field
-    plot.dsos()
-    plot.moon()
-
-    #if override_local_target is None:
-    #    plot.planets()
-    #else:
-    #    plot.marker(
-    #        ra=ra,
-    #        dec=dec,
-    #        style={
-    #            "marker": {
-    #                "size": 100,
-    #                "symbol": "circle",
-    #                "fill": "full",
-    #                "color": "#05ffff",
-    #                "edge_color": "#e0c1e0",
-    #                "alpha": 0.4,
-    #            },
-    #            "label": {
-    #                "font_size": 120,
-    #                "font_weight": "bold",
-    #                "font_color": "#ffffff",
-    #                "font_alpha": 1,
-    #                "font_family": "monospace",
-    #                "zorder": ZOrderEnum.LAYER_3,
-    #                "offset_x": "auto",
-    #                "offset_y": "auto",
-    #            },
-    #        },
-    #        label=override_local_target,
-    #    )
-
-    true_fov = telescope.eyepiece_fov / magnification
-    info_text = f"{telescope.focal_length}mm {telescope.eyepiece}mm ({telescope.eyepiece_fov}° AFOV)\n" \
-        f"{magnification:.1f}x, True FOV: {true_fov:.2f}°"
-
-    # plot.title(info_text)
-
+        add_target_indicator(
+            plot, 
+            target.ra, 
+            target.dec, 
+            telescope.true_fov()
+        )
+    
     return plot
 
+def create_telescope_field(telescope: Telescope, resolution=240):
+    pos = telescope.get_position()
+    ra, dec = pos[0], pos[1]
 
-# planets = load("de440s.bsp")
-#saturn = planets['SATURN BARYCENTER']
-#earth = planets['EARTH']
-#rochester = wgs84.latlon(rochesterLat, rochesterLong, rochesterElevation)
-#topocentric = earth + rochester
-#geocentric = topocentric.at(t).observe(saturn).apparent()
+    plot = OpticPlot(
+        ra=ra,
+        dec=dec,
+        lat=telescope.location.lat.degree,
+        lon=telescope.location.lon.degree,
+        dt=telescope.get_time().utc_datetime(),
+        style=style,
+        resolution=resolution,
+        optic=telescope.optic(),
+        ephemeris=ephemeris,
+        raise_on_below_horizon=False,
+    )
 
-#ra, dec, dist = geocentric.radec(epoch=t)
+    lim = telescope.get_limiting_magnitude()
+    print(f"Limiting magnitude: {lim:.2f}")
+
+    plot.stars(
+        size_fn=lambda star: np.clip(5 * (lim - star.magnitude), 0 , 1000),
+        alpha_fn=lambda star: np.clip(1 - (star.magnitude/lim), 0, 1),
+        catalog='big-sky')
+
+    plot.dsos(where=[_.magnitude < lim,])
+    plot.moon()
+    plot.planets()
+    
+    return plot

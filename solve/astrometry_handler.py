@@ -46,7 +46,7 @@ class AstrometryNetSolver(Solver):
                 return result
         except subprocess.CalledProcessError:
             pass
-        return [cmd[-1], "Failed"]
+        return [cmd[-1], "Failed", float("-inf")]
 
     def run_solver(self, cmd):
         solve = subprocess.Popen(

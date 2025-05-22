@@ -1,12 +1,16 @@
 """ State Manager for UI, Controls creating and rendering images, and managing input """
 import time
+import os
+import io
 from enum import Enum
 from PIL import Image
+from skyfield.api import load
 
 from hardware.display import ScreenRenderer
 #from hardware.screen import Screen
 from hardware.input import Input
 from astronomy.Telescope import Telescope
+from astronomy.field import enhance_telescope_field
 
 class ScreenState(Enum):
     MAIN_MENU = 0
@@ -122,24 +126,33 @@ class UIManager:
 
     def render_target_lists(self):
         lists = self.scope.target_manager.catalog_loader.get_catalogs()
-        print(lists)
         self.max_idx = len(lists) - 1
         return self.renderer.render_menu("Catalog?", lists, self.selected, True)
     
     def render_target_select(self):
         lists = self.scope.target_manager.get_catalog()
+        if self.scope.target_manager.catalog == "messier":
+            lists = [f"M-{a}" for a in lists]
         self.max_idx = len(lists) - 1
         return self.renderer.render_menu("Target?", lists, self.selected, True)
 
     def render_navigation(self):
         image = Image.new("RGB", (240, 240))
-
         if self.scope.position is None:
-            return self.renderer.render_image_with_caption(image, "N/A")
-        
-        ra, dec = self.scope.position
+            return self.renderer.render_image_with_caption(image, "Waiting for first solve...")
+        try:
+            pos = self.scope.get_position()
+            ra, dec = pos[0], pos[1]
+            plot = enhance_telescope_field(self.scope)
+            buf = io.BytesIO()
+            plot.export(buf, format='png')
+            buf.seek(0)
+            image = Image.open(buf)
 
-        return self.renderer.render_image_with_caption(image, f"RA: {ra:.4f}              DEC: {dec:.4f}")
+            return self.renderer.render_image_with_caption(image, f"RA: {ra:.4f}              DEC: {dec:.4f}")
+        except Exception as e:
+            print(f"Error rendering navigation: {e}")
+            return self.renderer.render_image_with_caption(image, "Error rendering navigation")
 
 
     def render(self):
@@ -155,7 +168,8 @@ class UIManager:
             #case ScreenState.TARGET_LIST: return self.
 
     def loop(self):
-        return
+        if os.name == 'nt' or os.uname().nodename != "rpi":
+            return
         while True:
             self.screen.draw_screen(self.render())
             self.screen.handle_input(self.input)

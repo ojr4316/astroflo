@@ -12,11 +12,14 @@ class TargetManager:
         self.catalog = None
         self.index = 0 
     
+    def set_target(self, target: CelestialObject):
+        self.target = target
+        
     def get_target_position(self):
         if self.target is None:
             return None
         return get_apparent_radec(self.target.ra, self.target.dec, self.location)
     
     def get_catalog(self):
-        return [a.messier_id or a.ngc_id for a in self.catalog_loader.all[self.catalog]]
+        return [t.name for t in self.catalog_loader.all[self.catalog]]
     

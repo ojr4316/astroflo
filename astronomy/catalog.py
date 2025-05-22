@@ -6,10 +6,7 @@ from astropy.coordinates import SkyCoord, EarthLocation, GCRS
 from astropy.time import Time
 import astropy.units as u
 
-rochesterLat = 43.1566
-rochesterLong = -77.6088
-rochesterElevation = 150
-rochester = EarthLocation(lat=rochesterLat*u.deg, lon=rochesterLong*u.deg, height=rochesterElevation*u.m)
+from astronomy.celestial import CelestialObject
 
 def get_apparent_radec(ra_hours: float, dec_deg: float, location: EarthLocation,
                        time_utc: str = None):
@@ -24,68 +21,13 @@ def get_apparent_radec(ra_hours: float, dec_deg: float, location: EarthLocation,
 
     return (apparent.ra.hour, apparent.dec.degree)
 
-class CelestialObject:
-    """Represents a celestial object from the catalog."""
-    
-    def __init__(self, 
-                 messier_id: Optional[int] = None,
-                 ngc_id: str = "",
-                 v_mag: float = 0.0,
-                 obj_type: str = "",
-                 comments: str = "",
-                 ra: float = 0.0,
-                 dec: float = 0.0,
-                 ref: str = "",
-                 is_up: bool = False):
-        self.messier_id = messier_id
-        self.ngc_id = ngc_id
-        self.v_mag = v_mag
-        self.type = obj_type
-        self.comments = comments
-        self.ra = ra
-        self.dec = dec
-        self.ref = ref
-        self.is_up = is_up
-    
-    def __str__(self) -> str:
-        messier_str = f"M{self.messier_id}" if self.messier_id else ""
-        ngc_str = f"{self.ngc_id}" if self.ngc_id else ""
-        
-        if messier_str and ngc_str:
-            id_str = f"{messier_str} ({ngc_str})"
-        else:
-            id_str = messier_str or ngc_str
-            
-        return f"{id_str}: {self.type}, Mag: {self.v_mag}, RA: {self.ra}, Dec: {self.dec}"
-    
-    @classmethod
-    def from_csv_row(cls, row: Dict[str, str]) -> 'CelestialObject':
-        """Create a CelestialObject from a CSV row dictionary."""
-        messier_id = int(row['messier_id']) if row['messier_id'] else None
-        
-        v_mag = float(row['v_mag']) if row['v_mag'] else 0.0
-        ra = float(row['ra']) if row['ra'] else 0.0
-        dec = float(row['dec']) if row['dec'] else 0.0
-        is_up = bool(row['is_up']) if row['is_up'] else False
-        
-        return cls(
-            messier_id=messier_id,
-            ngc_id=row['ngc_id'],
-            v_mag=v_mag,
-            obj_type=row['type'],
-            comments=row['comments'],
-            ra=ra,
-            dec=dec,
-            ref=row['ref'],
-            is_up=is_up
-        )
-
-
 class CatalogLoader:
     """Loads celestial objects from catalog CSV files."""
     
     def __init__(self):
         self.all = self.load_catalogs()
+        self.all["solar_system"] = []
+        self.all["by_constellation"] = []
         self.messier = self.all.get('messier', [])
         self.ngc = self.all.get('ngc', [])
 
@@ -130,22 +72,6 @@ class CatalogLoader:
         return catalogs
     
     def search_objects(self, **criteria) -> List[CelestialObject]:
-        """
-        Search for celestial objects matching specific criteria.
-        
-        Args:
-            **criteria: Keyword arguments for filtering (e.g., type='OC', v_mag_max=5.0)
-                Supported criteria:
-                - type: Object type (exact match)
-                - messier_id: Messier ID (exact match)
-                - ngc_id: NGC ID (exact match)
-                - v_mag_max: Maximum visual magnitude (objects brighter than this)
-                - v_mag_min: Minimum visual magnitude
-                - contains_comments: Substring to search for in comments
-        
-        Returns:
-            List of matching objects
-        """
         all_results = []
         
         # Search through all catalogs and collect matching objects
@@ -156,11 +82,8 @@ class CatalogLoader:
             if 'type' in criteria:
                 catalog_results = [obj for obj in catalog_results if obj.type == criteria['type']]
                 
-            if 'messier_id' in criteria:
-                catalog_results = [obj for obj in catalog_results if obj.messier_id == criteria['messier_id']]
-                
-            if 'ngc_id' in criteria:
-                catalog_results = [obj for obj in catalog_results if obj.ngc_id == criteria['ngc_id']]
+            if 'name' in criteria:
+                catalog_results = [obj for obj in catalog_results if obj.name == criteria['name']]
                 
             if 'v_mag_max' in criteria:
                 catalog_results = [obj for obj in catalog_results if obj.v_mag <= criteria['v_mag_max']]
@@ -175,20 +98,3 @@ class CatalogLoader:
             all_results.extend(catalog_results)
                 
         return all_results
-    
-
-# Example usage:
-if __name__ == "__main__":
-    catalogs = CatalogLoader()   
-
-    # Search for Messier 5
-    m5_results = catalogs.search_objects(messier_id=5)
-    if m5_results:
-        m5 = m5_results[0]  # Get the first (and likely only) result
-        print(m5)
-        print(f"RA: {m5.ra}, Dec: {m5.dec}")
-        ra, dec = get_apparent_radec(m5.ra, m5.dec, rochester)
-        print(f"Apparent RA: {ra:.4f} hours, Apparent Dec: {dec:.4f} degrees")
-    else:
-        print("Messier 5 not found in the catalog.")
-   

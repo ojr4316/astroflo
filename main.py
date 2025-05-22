@@ -11,13 +11,13 @@ from Astroflo import Astroflo
 from capture.FakeCamera import FakeCamera
 from solve.astrometry_handler import AstrometryNetSolver
 
-from astronomy.field import create_telescope_field
 from astronomy.Telescope import Telescope
+from astronomy.celestial import CelestialObject
 
-from hardware.ui import UIManager
+from hardware.ui import UIManager, ScreenState
 
 def build_camera():
-    if os.uname().nodename == "rpi":
+    if os.name != 'nt' and os.uname().nodename == "rpi":
         from capture.RPiCamera import RPiCamera
         cam = RPiCamera()
     else:
@@ -34,7 +34,7 @@ def main():
         focal_length=1200,
         eyepiece=25,
         eyepiece_fov=40,
-    ) # TODO: Save/load telescope and cam prefs to config
+    )
 
     ui = UIManager(scope)
     ui_thread = threading.Thread(target=ui.loop, daemon=True)
@@ -43,31 +43,29 @@ def main():
     solver = AstrometryNetSolver()
     cam = build_camera()
 
-    flo = Astroflo(cam, solver)
-    
-    while True:
-        start = time.time()
-        while flo.latest is None and (time.time() - start) < 10:
-            time.sleep(0.1)
-        
-        if flo.latest is not None:
-            print(f"Time taken to solve: {time.time() - start:.2f} seconds")
-            result = flo.latest['result']
-            print(result)
-            ra, dec = result[1]
-            scope.set_position(ra, dec)
-    
+    flo = Astroflo(cam, solver, scope)
+    flo.start()
 
+    ui.state = ScreenState.NAVIGATE
+
+    #m45 = CelestialObject("M45", 0, "Pleiades", "", 56.64, 24.1167, "", False)
+    #scope.set_position(m45.ra, m45.dec)
+
+    target = scope.observe_local("jupiter")
+    scope.set_camera_offset(0.6, -0.1)
+    scope.set_position(target.ra, target.dec)
+    scope.target_manager.set_target(target)
+
+    start = time.time()
+    img = ui.render()
+    end = time.time()
+    print(f"Render time: {end - start:.2f} seconds")
+    img.show()
+
+    #time.sleep(5)
+    #ui.selected = 27
+    #scope.target_manager.catalog = "messier"
+    
+    
 if __name__ == "__main__":
     main()
-
-#t = load.timescale().utc(2024, 1, 17, 22, 0, 0)
-
-
-# export plot
-#plot = create_telescope_field(scope, t)
-#buf = io.BytesIO()
-#plot.export(buf, format='png')
-#buf.seek(0)
-#image = Image.open(buf)
-#img = screen.render_image_with_caption(image, f"RA: {ra:.4f}              DEC: {dec:.4f}")

@@ -7,6 +7,9 @@ import numpy as np
 from astronomy.Telescope import Telescope
 import astropy.units as u
 
+import matplotlib
+matplotlib.use("Agg")
+
 common_font = {
     "font_size": 6,
     "font_color": "#ffffff",
@@ -90,7 +93,12 @@ style = PlotStyle(background_color="#200000",
                           ),
                       )).extend(style_overrides)
 
-ephemeris = 'de440s.bsp'
+# TODO: MOVE COMBINE
+from utils import is_pi
+if is_pi():
+    ephemeris = "/home/owen/astroflo/de440s.bsp"
+else:
+    ephemeris = 'de440s.bsp'
 planets = load(ephemeris)
 ts = load.timescale()
 

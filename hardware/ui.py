@@ -25,9 +25,10 @@ class UIManager:
         self.state = ScreenState.MAIN_MENU
         self.renderer = ScreenRenderer()
         self.input = Input()
-        if os.name == 'nt' or os.uname().nodename != "rpi":
-            from hardware.screen import Screen
-            self.screen = Screen()
+        self.screen = None
+        #if os.name == 'nt' or os.uname().nodename != "rpi":
+        from hardware.screen import Screen
+        self.screen = Screen()
 
 
         self.selected = 0

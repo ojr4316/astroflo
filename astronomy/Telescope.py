@@ -7,6 +7,8 @@ from starplot.optics import Reflector, Optic
 from skyfield.api import wgs84, load
 from astronomy.celestial import CelestialObject
 
+SETTINGS_FILE = "settings.txt"
+
 rochesterLat = 43.1566
 rochesterLong = -77.6088
 rochesterElevation = 150
@@ -14,7 +16,11 @@ rochesterElevation = 150
 rochester = EarthLocation(
     lat=rochesterLat*u.deg, lon=rochesterLong*u.deg, height=rochesterElevation*u.m)
 
-ephemeris = 'de440s.bsp'
+from utils import is_pi
+if is_pi():
+    ephemeris = "/home/owen/astroflo/de440s.bsp"
+else:
+    ephemeris = 'de440s.bsp'
 planets = load(ephemeris)
 earth = planets["EARTH"]
 
@@ -83,6 +89,7 @@ class Telescope:
 
     def set_camera_offset(self, x: float, y: float):
         self.camera_offset = (x, y)
+        self.save_settings()
 
     def get_position(self):
         if self.position is None:
@@ -111,17 +118,17 @@ class Telescope:
         return {"x_offset": f"{self.camera_offset[0]:.1f}", "y_offset": f"{self.camera_offset[1]:.1f}"}
     
     def save_settings(self): 
-        settings = self.get_settings().update(self.get_cam_settings())
-        with open("settings.txt", "w") as f:
+        settings = {**self.get_settings(), **self.get_cam_settings()}
+        with open(SETTINGS_FILE, "w") as f:
             for key, value in settings.items():
                 f.write(f"{key}: {value}\n")
-        print("Settings saved to settings.txt")
 
     def load_settings(self):
-        if not os.path.exists("settings.txt"):
+        if not os.path.exists(SETTINGS_FILE):
+            self.save_settings()
             return
         settings = {}
-        with open("settings.txt", "r") as f:
+        with open(SETTINGS_FILE, "r") as f:
             for line in f:
                 key, value = line.strip().split(": ")
                 settings[key] = value
@@ -130,6 +137,6 @@ class Telescope:
         self.eyepiece = int(settings["eyepiece"])
         self.eyepiece_fov = int(settings["eyepiece_fov"])
         self.camera_offset = (float(settings["x_offset"]), float(settings["y_offset"]))
-        print("Settings loaded from settings.txt")
+        print(f"Settings loaded from {SETTINGS_FILE}")
 
     

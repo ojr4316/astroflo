@@ -16,8 +16,10 @@ from astronomy.celestial import CelestialObject
 
 from hardware.ui import UIManager, ScreenState
 
+from utils import is_pi
+
 def build_camera():
-    if os.name != 'nt' and os.uname().nodename == "rpi":
+    if is_pi():
         from capture.RPiCamera import RPiCamera
         cam = RPiCamera()
     else:
@@ -46,24 +48,32 @@ def main():
     flo = Astroflo(cam, solver, scope)
     flo.start()
 
-    time.sleep(10)
+   
+    try:
+        while True:
+            time.sleep(1)
+            # Check subsystems and restart if necessary
+    except Exception as e:
+        print(e)
+        flo.stop()
+        ui_thread.join()
 
     ui.state = ScreenState.NAVIGATE
 
     #m45 = CelestialObject("M45", 0, "Pleiades", "", 56.64, 24.1167, "", False)
     #scope.set_position(m45.ra, m45.dec)
 
-    target = scope.observe_local("jupiter")
-    scope.set_camera_offset(0.0, 0.0)
+    #target = scope.observe_local("jupiter")
+    #scope.set_camera_offset(0.0, 0.0)
 
     #scope.set_position(target.ra, target.dec)
-    scope.target_manager.set_target(target)
+    #scope.target_manager.set_target(target)
 
-    start = time.time()
-    img = ui.render()
-    end = time.time()
-    print(f"Render time: {end - start:.2f} seconds")
-    img.show()
+    #start = time.time()
+    #img = ui.render()
+    #end = time.time()
+    #print(f"Render time: {end - start:.2f} seconds")
+    #img.show()
 
     #time.sleep(5)
     #ui.selected = 27

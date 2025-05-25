@@ -31,8 +31,8 @@ class Astroflo:
         self.capturer.start()
 
         self.capturer.configure(3_000_000) # TODO: configure camera reasonably
-        self.solver.limit = 10 # TODO: configure sovler reasonably
-        #self.solver.scale = 19
+        self.solver.limit = 100 # TODO: configure sovler reasonably
+        self.solver.scale = 19
     
         self.capture_thread.start()
    
@@ -65,7 +65,7 @@ class Astroflo:
                     self.latest_timestamp = timestamp
                     ra, dec = coords
                     self.scope.set_position(ra, dec)
-                os.remove(f"./{image}") # Discard image
+                #os.remove(f"./{image}") # Discard image
         except Exception as e:
             print(f"Error processing image from {timestamp}: {e}")
     

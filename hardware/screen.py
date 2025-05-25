@@ -55,7 +55,7 @@ if os.name != 'nt' and os.uname().nodename == "rpi":
 
         width = disp.width
         height = disp.height
-        image = Image.new("RGB", (width, height))
+        image = Image.new("RGBA", (width, height))
 
         draw = ImageDraw.Draw(image)
 
@@ -63,15 +63,15 @@ if os.name != 'nt' and os.uname().nodename == "rpi":
 
         frame = 0
 
+        overlay = Image.new("RGBA", (width, height), (0, 0, 0, 240))
+
         def draw_screen(self, img):
             self.draw.rectangle((0, 0, self.width, self.height), outline=0, fill=(0, 0, 0))
 
             if img is not None:
                 resize = img.resize((240, 240))
                 self.image.paste(resize, (0, 0))
-                #self.frame+=1
-            #self.draw.text((0, 0), "Frame: " + str(self.frame), font=self.fnt, fill=(255, 255, 255))
-
+                self.image = Image.alpha_composite(self.image, self.overlay)
             self.disp.image(self.image)        
 
         def handle_input(self, input):

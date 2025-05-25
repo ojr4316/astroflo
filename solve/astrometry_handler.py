@@ -25,16 +25,16 @@ class AstrometryNetSolver(Solver):
         
         # Astrometry.net specific parameters
         self.scale = 68.5
-        self.scale_uncertainty = 0.5
+        self.scale_uncertainty = 2
 
         # Limits for solving
-        self.limit = 10
+        self.limit = 30
         self.min_limit = 1
         self.max_limit = 60
 
         self.depth = None
 
-        self.downsample = 4
+        self.downsample = 0
         self.max_downsample = 8
 
     def solve(self, image_path):

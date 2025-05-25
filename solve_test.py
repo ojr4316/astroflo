@@ -6,6 +6,8 @@ from concurrent.futures import ThreadPoolExecutor
 
 root_dir = "C:\\Users\\314ow\\rpicam_samples"
 solver = AstrometryNetSolver()
+solver.scale = 19
+solver.downsample = 0
 executor = ThreadPoolExecutor(max_workers=5)
 
 results = {}
@@ -44,4 +46,7 @@ def main():
         print(f"Exposure: {exposure}, Average Solve Time: {average_time:.2f} seconds")
 
 if __name__ == "__main__":
-    main()
+    #main()
+    img = "./captures/20250525_003152.jpg"
+    res = attempt(img)
+    print(res)

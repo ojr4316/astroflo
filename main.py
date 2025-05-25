@@ -46,14 +46,17 @@ def main():
     flo = Astroflo(cam, solver, scope)
     flo.start()
 
+    time.sleep(10)
+
     ui.state = ScreenState.NAVIGATE
 
     #m45 = CelestialObject("M45", 0, "Pleiades", "", 56.64, 24.1167, "", False)
     #scope.set_position(m45.ra, m45.dec)
 
     target = scope.observe_local("jupiter")
-    scope.set_camera_offset(0.6, -0.1)
-    scope.set_position(target.ra, target.dec)
+    scope.set_camera_offset(0.0, 0.0)
+
+    #scope.set_position(target.ra, target.dec)
     scope.target_manager.set_target(target)
 
     start = time.time()

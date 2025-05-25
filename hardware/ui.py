@@ -7,7 +7,6 @@ from PIL import Image
 from skyfield.api import load
 
 from hardware.display import ScreenRenderer
-#from hardware.screen import Screen
 from hardware.input import Input
 from astronomy.Telescope import Telescope
 from astronomy.field import enhance_telescope_field
@@ -26,7 +25,10 @@ class UIManager:
         self.state = ScreenState.MAIN_MENU
         self.renderer = ScreenRenderer()
         self.input = Input()
-        #self.screen = Screen()
+        if os.name == 'nt' or os.uname().nodename != "rpi":
+            from hardware.screen import Screen
+            self.screen = Screen()
+
 
         self.selected = 0
         self.max_idx = 2

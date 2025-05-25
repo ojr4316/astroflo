@@ -11,6 +11,9 @@ class TargetManager:
 
         self.catalog = None
         self.index = 0 
+        
+        self.distance = 0.0
+
     
     def set_target(self, target: CelestialObject):
         self.target = target

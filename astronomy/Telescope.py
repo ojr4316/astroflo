@@ -42,7 +42,7 @@ class Telescope:
         self.speed = 0
         
         self.timescale = load.timescale()
-        self.time = self.timescale.utc(2025, 3, 21, 2, 0, 0)
+        self.time = self.timescale.now() #self.timescale.utc(2025, 3, 21, 2, 0, 0)
 
         self.load_settings()
     

@@ -7,7 +7,8 @@ from starplot.optics import Reflector, Optic
 from skyfield.api import wgs84, load
 from astronomy.celestial import CelestialObject
 
-SETTINGS_FILE = "settings.txt"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+SETTINGS_FILE = os.path.join(BASE_DIR, "settings.txt")
 
 rochesterLat = 43.1566
 rochesterLong = -77.6088
@@ -113,7 +114,7 @@ class Telescope:
 
     def get_settings(self): # Telescope Settings Page
         return {"aperture": self.aperture, "focal_length": self.focal_length, "eyepiece": self.eyepiece, "eyepiece_fov": self.eyepiece_fov}
-    
+
     def get_cam_settings(self): # Camera Settings Page
         return {"x_offset": f"{self.camera_offset[0]:.1f}", "y_offset": f"{self.camera_offset[1]:.1f}"}
     

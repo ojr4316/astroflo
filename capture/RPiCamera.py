@@ -60,8 +60,8 @@ class RPiCamera(Camera):
                 "AnalogueGain": float(goal_gain)
             })
             
-            time.sleep(0.2)  # Wait longer between attempts
-            _ = self.picam2.capture_array()  # capture test frame
+            time.sleep(0.1)
+            _ = self.picam2.capture_array()
             self.last_metadata = self.picam2.capture_metadata()
     
             actual_exp = self.last_metadata.get("ExposureTime", 0)

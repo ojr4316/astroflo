@@ -5,7 +5,7 @@ import io
 from enum import Enum
 from PIL import Image
 from skyfield.api import load
-
+import concurrent.futures
 from hardware.display import ScreenRenderer
 from hardware.input import Input
 from astronomy.Telescope import Telescope
@@ -26,15 +26,19 @@ class UIManager:
         self.renderer = ScreenRenderer()
         self.input = Input()
         self.screen = None
-        #if os.name == 'nt' or os.uname().nodename != "rpi":
+        
         from hardware.screen import Screen
         self.screen = Screen()
-
+        self.screen.set_brightness(0.8)
 
         self.selected = 0
         self.max_idx = 2
 
         self.setup_input()
+
+        self.field_render_executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+        self.render_future = None
+        self.last_render = None
 
     def setup_input(self):
         self.input.controls['R']["press"] = self.decrease
@@ -146,13 +150,31 @@ class UIManager:
         try:
             pos = self.scope.get_position()
             ra, dec = pos[0], pos[1]
-            plot = enhance_telescope_field(self.scope)
-            buf = io.BytesIO()
-            plot.export(buf, format='png')
-            buf.seek(0)
-            image = Image.open(buf)
 
-            return self.renderer.render_image_with_caption(image, f"RA: {ra:.4f}              DEC: {dec:.4f}")
+
+            # Actual field rendering is costly, so separate thread
+            if self.render_future is None or self.render_future.done():
+                def run_and_store():
+                    try:
+                        plot = enhance_telescope_field(self.scope)
+                        buf = io.BytesIO()
+                        plot.export(buf, format='png')
+                        buf.seek(0)
+                        return Image.open(buf)
+                    except Exception as e:
+                        print(f"Background enhancement error: {e}")
+                        return None
+
+                def handle_result(fut):
+                    self.last_render = fut.result()
+
+                self.render_future = self.field_render_executor.submit(run_and_store)
+                self.render_future.add_done_callback(handle_result)
+
+            if self.last_render is not None:
+                image = self.last_render
+
+            return self.renderer.render_image_with_caption(image, f"RA: {ra:.4f}, DEC: {dec:.4f}")
         except Exception as e:
             print(f"Error rendering navigation: {e}")
             return self.renderer.render_image_with_caption(image, "Error rendering navigation")

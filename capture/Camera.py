@@ -38,11 +38,13 @@ class Camera(ABC):
         self.running = False
 
     def save_frame(self, frame):
-        #timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        #filename = os.path.join(
-        #    self.save_dir, 
-        #    f"{timestamp}.jpg"
-        #)
-        #cv2.imwrite(filename, cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
-        return "/home/owen/astroflo/captures/20250525_002707.jpg"
+        #return "/home/owen/astroflo/captures/20250525_002707.jpg"
+
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = os.path.join(
+            self.save_dir, 
+            f"{timestamp}.jpg"
+        )
+        cv2.imwrite(filename, cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
+        return filename
  

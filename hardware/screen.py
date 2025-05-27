@@ -1,6 +1,7 @@
 """ Screen Manager for 1.3" Adafruit TFT Bonnet """
 import os
-if os.name != 'nt' and os.uname().nodename == "rpi":
+from utils import is_pi
+if is_pi():
     import time
     import random
     from colorsys import hsv_to_rgb
@@ -63,7 +64,16 @@ if os.name != 'nt' and os.uname().nodename == "rpi":
 
         frame = 0
 
-        overlay = Image.new("RGBA", (width, height), (0, 0, 0, 240))
+        brightness = 0
+
+        overlay = Image.new("RGBA", (width, height), (0, 0, 0, brightness))
+
+        # inverted to make more logical sense, 0: Full brightness, 1: HIGHEST
+        def set_brightness(self, b: int):
+            b = max(0.0, min(1.0, b))
+            self.brightness = int((1.0 - b) * 255)
+            print(self.brightness)
+            self.overlay = Image.new("RGBA", (self.width, self.height), (0, 0, 0, self.brightness))
 
         def draw_screen(self, img):
             self.draw.rectangle((0, 0, self.width, self.height), outline=0, fill=(0, 0, 0))
@@ -88,3 +98,4 @@ else: # Fake Screen
             self.width = 240
             self.height = 240
             #self.image = Image.new("RGB", (self.width, self.height))
+        def set_brightness(self, b): pass

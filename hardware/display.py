@@ -24,8 +24,8 @@ class ScreenRenderer:
         draw = ImageDraw.Draw(img)
         img.paste(image, (0, 0))
         # Draw caption
-        bbox = draw.textbbox((0, 0), caption, font=self.font)
-        w, h = bbox[2] - bbox[0], bbox[3] - bbox[1]
+        #bbox = draw.textbbox((0, 0), caption, font=self.font)
+        #w, h = bbox[2] - bbox[0], bbox[3] - bbox[1]
         draw.text((1, 0), caption, font=self.font, fill=self.COLOR_GRAY)
         return self._transform(img)
 

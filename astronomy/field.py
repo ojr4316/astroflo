@@ -7,8 +7,7 @@ import numpy as np
 from astronomy.Telescope import Telescope
 import astropy.units as u
 
-import matplotlib
-matplotlib.use("Agg")
+
 
 common_font = {
     "font_size": 6,
@@ -188,7 +187,7 @@ def add_target_indicator(plot, target_ra, target_dec, fov_radius, color="#05ffff
         add_off_field_arrow(plot, center_ra, center_dec, target_ra, target_dec, fov_radius, color)
 
 def enhance_telescope_field(telescope, plot=None):
-    if plot is None:
+    if plot is None and telescope.get_position() != None:
         plot = create_telescope_field(telescope)
     
     if telescope.target_manager.target is not None:

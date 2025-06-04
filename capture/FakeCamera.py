@@ -42,6 +42,6 @@ class FakeCamera(Camera):
         else:
             fake_image = self._generate_fake_image()        
 
-        #path = self.save_frame(np.array(fake_image))
-        return fake_image
+        path = self.save_frame(np.array(fake_image))
+        return path
 

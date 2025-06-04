@@ -27,13 +27,14 @@ class Astroflo:
         self.running = False
     
     def start(self):
-        self.running = True
+        # Configure camera resasonably before start
+        self.capturer.configure(500_000)
         self.capturer.start()
-
-        self.capturer.configure(3_000_000) # TODO: configure camera reasonably
-        self.solver.limit = 100 # TODO: configure sovler reasonably
-        self.solver.scale = 19
-    
+        
+        # Configure Solver
+        #self.solver.limit = 100
+        #self.solver.scale = 19
+        self.running = True
         self.capture_thread.start()
    
     def stop(self):
@@ -53,19 +54,19 @@ class Astroflo:
             processed_img = img
             for processor in self.processors:
                 processed_img = processor.process(processed_img)
-            
             result = self.solver.solve(processed_img)
-            image, coords, odds = result
-            with self.state_lock:
-                if (not self.latest_timestamp or timestamp > self.latest_timestamp) and result[1] != 'Failed':
-                    self.latest = {
-                        'result': result,
-                        'timestamp': timestamp
-                    }
-                    self.latest_timestamp = timestamp
-                    ra, dec = coords
-                    self.scope.set_position(ra, dec)
-                #os.remove(f"./{image}") # Discard image
+            if result is not None:
+                image, coords, odds = result
+                with self.state_lock:
+                    if (not self.latest_timestamp or timestamp > self.latest_timestamp) and result[1] != 'Failed':
+                        self.latest = {
+                            'result': result,
+                            'timestamp': timestamp
+                        }
+                        self.latest_timestamp = timestamp
+                        ra, dec = coords
+                        self.scope.set_position(ra, dec)
+                    #os.remove(f"./{image}") # Discard image
         except Exception as e:
             print(f"Error processing image from {timestamp}: {e}")
     

@@ -4,3 +4,4 @@ eyepiece: 25
 eyepiece_fov: 40
 x_offset: 0.0
 y_offset: 0.0
+view_angle: 0

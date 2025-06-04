@@ -154,7 +154,6 @@ class UIManager:
             if self.render_future is None or self.render_future.done():
                 def run_and_store():
                     try:
-                        print("started render")
                         plot = enhance_telescope_field(self.scope)
                         buf = io.BytesIO()
                         plot.export(buf, format='png')
@@ -165,17 +164,16 @@ class UIManager:
                         return None
 
                 def handle_result(fut):
-                    print("finished render")
                     self.last_render = fut.result()
 
-                #self.render_future = self.field_render_executor.submit(run_and_store)
-                #self.render_future.add_done_callback(handle_result)
+                self.render_future = self.field_render_executor.submit(run_and_store)
+                self.render_future.add_done_callback(handle_result)
 
-            plot = enhance_telescope_field(self.scope)
-            buf = io.BytesIO()
-            plot.export(buf, format='png')
-            buf.seek(0)
-            image = Image.open(buf)
+            #plot = enhance_telescope_field(self.scope)
+            #buf = io.BytesIO()
+            #plot.export(buf, format='png')
+            #buf.seek(0)
+            #image = Image.open(buf)
 
             if self.last_render is not None:
                 image = self.last_render

@@ -23,8 +23,8 @@ from utils import is_pi
 
 from astronomy.field import enhance_telescope_field
 
-#import matplotlib
-#matplotlib.use("Agg")
+import matplotlib
+matplotlib.use("Agg")
 
 def build_camera():
     if is_pi():
@@ -42,7 +42,6 @@ class OperationMode(Enum):
     MANUAL = 0
     AUTO = 1
     TEST_UI = 2
-
 
 def main(operation_mode: OperationMode = OperationMode.AUTO):
     scope = Telescope(
@@ -62,11 +61,11 @@ def main(operation_mode: OperationMode = OperationMode.AUTO):
     flo = Astroflo(cam, solver, scope)
     flo.start()
 
-    time.sleep(4)
     match operation_mode:
         case OperationMode.MANUAL:
             pass
         case OperationMode.AUTO:
+            ui.state = ScreenState.NAVIGATE
             try:
                 while True:
                     time.sleep(1)
@@ -76,7 +75,7 @@ def main(operation_mode: OperationMode = OperationMode.AUTO):
                 flo.stop()
                 ui_thread.join()
         case OperationMode.TEST_UI:
-
+            time.sleep(3)
             #scope.set_position(279.6348, 8.0315)
 
             ui.state = ScreenState.NAVIGATE #ui.selected = 27
@@ -88,9 +87,10 @@ def main(operation_mode: OperationMode = OperationMode.AUTO):
             #scope.target_manager.set_target(target)
             
             #scope.set_camera_offset(0.0, 0.0)
-            #time.sleep(3)
             print(scope.get_position())
+            time.sleep(5)
             img = ui.render()
+            time.sleep(5)
             img.show()
 
     

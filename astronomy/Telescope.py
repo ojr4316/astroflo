@@ -41,6 +41,7 @@ class Telescope:
         self.position = None
         self.last_position = None
         self.camera_offset = (0, 0)
+        self.viewing_angle = 0 # 0-359deg
 
         self.location = rochester
         self.wgsLocation = wgs84.latlon(rochesterLat, rochesterLong, rochesterElevation) 
@@ -116,7 +117,7 @@ class Telescope:
         return {"aperture": self.aperture, "focal_length": self.focal_length, "eyepiece": self.eyepiece, "eyepiece_fov": self.eyepiece_fov}
 
     def get_cam_settings(self): # Camera Settings Page
-        return {"x_offset": f"{self.camera_offset[0]:.1f}", "y_offset": f"{self.camera_offset[1]:.1f}"}
+        return {"x_offset": f"{self.camera_offset[0]:.1f}", "y_offset": f"{self.camera_offset[1]:.1f}", "view_angle": f"{self.viewing_angle}"}
     
     def save_settings(self): 
         settings = {**self.get_settings(), **self.get_cam_settings()}
@@ -138,6 +139,7 @@ class Telescope:
         self.eyepiece = int(settings["eyepiece"])
         self.eyepiece_fov = int(settings["eyepiece_fov"])
         self.camera_offset = (float(settings["x_offset"]), float(settings["y_offset"]))
+        self.viewing_angle = int(settings["view_angle"])
         print(f"Settings loaded from {SETTINGS_FILE}")
 
     

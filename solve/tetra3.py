@@ -7,12 +7,15 @@ from PIL import Image
 import cv2
 import time
 
-
+import os
 import sys
 import pathlib
 
 # Make sure you're importing the package, not the module
-sys.path.insert(0, str(pathlib.Path("C:/Users/314ow/cedar-solve").resolve()))
+if os.name == 'nt':
+    sys.path.insert(0, str(pathlib.Path("C:/Users/314ow/cedar-solve").resolve()))
+else:
+    sys.path.insert(0, str(pathlib.Path("/home/owen/cedar-solve").resolve()))
 
 from tetra3.tetra3 import Tetra3
 from tetra3 import cedar_detect_client
@@ -39,12 +42,8 @@ class Tetra3Solver(Solver):
         #processed = tetra3.crop_and_downsample_image(image, downsample=0, return_offsets=True)
         #image, offsets = processed
         
-        #Image.fromarray(image).show(title="After crop/downsample")
-
-        centroids = self.cedar_detect.extract_centroids(image, sigma=8, max_size=10, use_binned=True)
+        centroids = self.cedar_detect.extract_centroids(image, sigma=8, use_binned=True)
         result = self.t3.solve_from_centroids(centroids, fov_estimate=self.fov, size=(image.shape[1], image.shape[0]))
-
-        print(f"Centroids: {len(centroids)}")
 
         #result = self.t3.solve_from_image(Image.fromarray(image), fov_estimate=self.fov, fov_max_error=1, pattern_checking_stars=20)
 
@@ -54,10 +53,8 @@ class Tetra3Solver(Solver):
         #print(result)
         
         if ra is not None:
-            #print(f"Solve took {time.time() - start:.2f} seconds")
-            return (None, (ra, dec), prob)
-        #print(f"Failed in {time.time() - start:.2f} seconds")
-        
+            coords = (ra, dec)
+            return (None, coords, prob)        
 
         return None
     

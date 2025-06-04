@@ -7,8 +7,6 @@ import numpy as np
 from astronomy.Telescope import Telescope
 import astropy.units as u
 
-
-
 common_font = {
     "font_size": 6,
     "font_color": "#ffffff",
@@ -220,9 +218,9 @@ def create_telescope_field(telescope: Telescope, resolution=240):
     )
 
     lim = telescope.get_limiting_magnitude()
-    print(f"Limiting magnitude: {lim:.2f}")
 
     plot.stars(
+        where_labels=[_.magnitude < 2.5], #where=[_.magnitude < 9], 
         size_fn=lambda star: np.clip(5 * (lim - star.magnitude), 0 , 1000),
         alpha_fn=lambda star: np.clip(1 - (star.magnitude/lim), 0, 1),
         catalog='big-sky')
@@ -230,5 +228,7 @@ def create_telescope_field(telescope: Telescope, resolution=240):
     plot.dsos(where=[_.magnitude < lim,])
     plot.moon()
     plot.planets()
+
+    plot.rotate = telescope.viewing_angle
     
     return plot

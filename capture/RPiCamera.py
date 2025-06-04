@@ -5,24 +5,23 @@ import os
 import cv2
 from picamera2 import Picamera2
 
+from PIL import Image
+
+low_res = (640, 480)
+high_res = (4056, 3040)
+
 class RPiCamera(Camera):
     def __init__(self, save_dir="captures"):
         super().__init__(save_dir=save_dir)
 
         self.picam2 = Picamera2()
         self.config = self.picam2.create_still_configuration(
-            main={"size": (4056, 3040)}
+            main={"size": low_res}
         )
         self.picam2.configure(self.config)
  
     def start(self):
-        self.picam2.set_controls({
-            "AeEnable": False,
-            "AwbEnable": False,
-        })
         self.picam2.start()
-        print("Warming up camera...")
-        time.sleep(2) 
         self.running = True
         super().start()
         print("Camera controller started!")
@@ -32,12 +31,19 @@ class RPiCamera(Camera):
         
         frame = self.picam2.capture_array()
         self.last_metadata = self.picam2.capture_metadata()            
- 
+
+        return Image.open("./captures/20250526_225300.jpg")
+        
         return frame#self.save_frame(frame)
  
 
     def configure(self, goal_exposure, goal_gain=16, max_attempts=10):
         super().configure(goal_exposure, goal_gain)
+
+        currently_on = self.running
+        if not currently_on:
+            self.picam2.start()
+
         self.picam2.set_controls({
             "AeEnable": False,
             "AwbEnable": False,
@@ -68,6 +74,9 @@ class RPiCamera(Camera):
             actual_gain = self.last_metadata.get("AnalogueGain", 0)
             print(f"Attempt {attempts + 1}: Actual Exposure: {actual_exp}/{goal_exposure}, Actual Gain: {actual_gain}/{goal_gain}")
             attempts += 1
+        if not currently_on:
+            self.picam2.stop()
+        
  
     def stop(self):
         super().stop()

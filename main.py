@@ -12,7 +12,7 @@ from Astroflo import Astroflo
 
 from capture.FakeCamera import FakeCamera
 from solve.astrometry_handler import AstrometryNetSolver
-from solve.tetra3 import Tetra3Solver
+#from solve.tetra3 import Tetra3Solver
 
 from astronomy.Telescope import Telescope
 from astronomy.celestial import CelestialObject
@@ -55,12 +55,13 @@ def main(operation_mode: OperationMode = OperationMode.AUTO):
     ui_thread = threading.Thread(target=ui.loop, daemon=True)
     ui_thread.start()
 
-    solver = Tetra3Solver()
+    solver = AstrometryNetSolver()
     cam = build_camera()
 
     flo = Astroflo(cam, solver, scope)
     flo.start()
 
+    time.sleep(1)
     match operation_mode:
         case OperationMode.MANUAL:
             pass
@@ -75,8 +76,8 @@ def main(operation_mode: OperationMode = OperationMode.AUTO):
                 flo.stop()
                 ui_thread.join()
         case OperationMode.TEST_UI:
-            time.sleep(3)
-            #scope.set_position(279.6348, 8.0315)
+
+            scope.set_position(279.6348, 8.0315)
 
             ui.state = ScreenState.NAVIGATE #ui.selected = 27
             #scope.target_manager.catalog = "messier"

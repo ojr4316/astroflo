@@ -9,6 +9,7 @@ from astronomy.celestial import CelestialObject
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SETTINGS_FILE = os.path.join(BASE_DIR, "settings.txt")
+COORD_LOG = os.path.join(BASE_DIR, "coord_log.txt")
 
 rochesterLat = 43.1566
 rochesterLong = -77.6088
@@ -88,7 +89,6 @@ class Telescope:
         local = CelestialObject("Planet", 0, "Planet", "", ra.degrees, dec.degrees, "", False)
         return local
 
-
     def set_camera_offset(self, x: float, y: float):
         self.camera_offset = (x, y)
         self.save_settings()
@@ -104,7 +104,13 @@ class Telescope:
         if self.position is not None:
             self.last_position = self.position
         self.position = (ra, dec)
+        self.save_coord()
     
+    def save_coord(self):
+        with open(COORD_LOG, "a") as f:
+            log = f"{self.get_time().utc_strftime('%Y-%m-%d %H:%M:%S')} - {self.get_position()}\n"
+            f.write(log)
+
     def modify(self, idx, increase=False): # Telescope Settings Page, TODO: Maybe modify UI interally to adjust values
         match(idx):
             case 0: self.aperture += (1 if increase else -1)

@@ -13,10 +13,10 @@ base_cmd = [ "solve-field", "--overwrite", "--no-plots",
         "--keep-xylist", "none",
         "--wcs", "none",
         "--corr", "none",
-        "--temp-axy",
-        "--uniformize", "0",
-        "--no-remove-lines",
-        "--no-background-subtraction",]
+        "--temp-axy",]
+        #"--uniformize", "0",
+        #"--no-remove-lines",
+        #"--no-background-subtraction",]
 
 class AstrometryNetSolver(Solver):
     
@@ -25,17 +25,23 @@ class AstrometryNetSolver(Solver):
         
         # Astrometry.net specific parameters
         self.scale = 68.5
-        self.scale_uncertainty = 2
+        self.scale_uncertainty = 0.1
 
         # Limits for solving
-        self.limit = 30
+        self.limit = 60
         self.min_limit = 1
         self.max_limit = 60
 
         self.depth = None
 
-        self.downsample = 0
+        self.downsample = 4
         self.max_downsample = 8
+
+        self.ra = None
+        self.dec = None
+        self.radius = 20
+
+        self.sigma = 3.0 
 
     def solve(self, image_path):
         cmd = self.build_cmd(image_path)
@@ -49,6 +55,7 @@ class AstrometryNetSolver(Solver):
         return [cmd[-1], "Failed", float("-inf")]
 
     def run_solver(self, cmd):
+        print(f"Running command: {' '.join(cmd)}")
         solve = subprocess.Popen(
             cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True
         )
@@ -69,7 +76,11 @@ class AstrometryNetSolver(Solver):
                         self.scale = new_scale
                     return [cmd[-1], (ra, dec), highest_odds]
         solve.wait()
-        
+    
+    def build_location(self):
+        if self.ra is None or self.dec is None:
+            return []
+        return ["--ra", str(self.ra), "--dec", str(self.dec), "--radius", str(self.radius)]
 
     def build_scale(self, unit="arcsecperpix"):
         if self.scale is None:
@@ -93,6 +104,11 @@ class AstrometryNetSolver(Solver):
             return []
         return ["--downsample", str(self.downsample)]
 
+    def build_sigma(self):
+        if self.sigma is None:
+            return []
+        return ["--sigma", str(self.sigma)]
+
     def build_cmd(self, image_path):
         cmd = base_cmd.copy()
         if os.name == 'nt':
@@ -101,7 +117,8 @@ class AstrometryNetSolver(Solver):
         cmd += self.build_limit()
         cmd += self.build_downsample()
         cmd += self.build_depth()
-
+        cmd += self.build_location()
+        cmd += self.build_sigma()
 
          # always add image path last
         if os.name == 'nt':

@@ -33,7 +33,7 @@ class RPiCamera(Camera):
         frame = self.picam2.capture_array()
         self.last_metadata = self.picam2.capture_metadata()            
  
-        return self.save_frame(frame)
+        return frame#self.save_frame(frame)
  
 
     def configure(self, goal_exposure, goal_gain=16, max_attempts=10):

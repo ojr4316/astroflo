@@ -8,3 +8,10 @@ photutils
 pytest
 skyfield
 starplot
+mahotas
+git+https://github.com/esa/tetra3.git
+
+# Cedar dependencies
+grpcio
+google
+protobuf

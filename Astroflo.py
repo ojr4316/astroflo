@@ -13,7 +13,8 @@ class Astroflo:
     capturer: Camera = None
     solver: Solver = None
     processors: List[ImageProcessor] = []
-    
+    ## Fail Manager
+    ## 
     def __init__(self, capturer: Camera, solver: Solver, scope: Telescope, processors: Optional[List[ImageProcessor]] = None):
         self.capturer = capturer
         self.solver = solver
@@ -70,7 +71,7 @@ class Astroflo:
                         }
                         self.latest_timestamp = timestamp
                         ra, dec = coords
-                        self.scope.set_position(ra, dec)
+                        #self.scope.set_position(ra, dec)
                             #os.remove(f"./{image}") # Discard image
                 else: # Adjust exposure until solvable
                     self.fails += 1

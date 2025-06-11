@@ -10,6 +10,7 @@ from hardware.display import ScreenRenderer
 from hardware.input import Input
 from astronomy.Telescope import Telescope
 from astronomy.field import enhance_telescope_field
+import matplotlib.pyplot as plt
 
 class ScreenState(Enum):
     MAIN_MENU = 0
@@ -39,6 +40,8 @@ class UIManager:
         self.field_render_executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         self.render_future = None
         self.last_render = None
+
+        self.last_render_time = time.time()
 
     def setup_input(self):
         self.input.controls['R']["press"] = self.decrease
@@ -82,16 +85,29 @@ class UIManager:
 
 
     def decrease(self):
-        if self.selected > 0:
-            self.selected -= 1
+        if self.state == ScreenState.NAVIGATE:
+            self.scope.viewing_angle -= 1
+            if self.scope.viewing_angle < 0:
+                self.scope.viewing_angle = 359
+            print(self.scope.viewing_angle)
+
         else:
-            self.selected = self.max_idx
+            if self.selected > 0:
+                self.selected -= 1
+            else:
+                self.selected = self.max_idx
 
     def increase(self):
-        if self.selected < self.max_idx:
-            self.selected += 1
+        if self.state == ScreenState.NAVIGATE:
+            self.scope.viewing_angle += 1
+            if self.scope.viewing_angle > 359:
+                self.scope.viewing_angle = 0
+            print(self.scope.viewing_angle)
         else:
-            self.selected = 0
+            if self.selected < self.max_idx:
+                self.selected += 1
+            else:
+                self.selected = 0
 
     def left(self):
         if self.state == ScreenState.CONFIGURE_TELESCOPE:
@@ -124,11 +140,11 @@ class UIManager:
         return self.renderer.render_menu(title, options, self.selected)
     
     def render_telescope_settings(self):
-        self.max_idx = 3
+        self.max_idx = len(self.scope.get_settings())
         return self.renderer.render_settings(self.scope.get_settings(), self.selected)
 
     def render_camera_settings(self):
-        self.max_idx = 2
+        self.max_idx = len(self.scope.get_cam_settings())
         return self.renderer.render_settings(self.scope.get_cam_settings(), self.selected)
 
     def render_target_lists(self):
@@ -155,6 +171,7 @@ class UIManager:
                 def run_and_store():
                     try:
                         plot = enhance_telescope_field(self.scope)
+                        plt.close(plot.fig)
                         buf = io.BytesIO()
                         plot.export(buf, format='png')
                         buf.seek(0)
@@ -164,6 +181,7 @@ class UIManager:
                         return None
 
                 def handle_result(fut):
+                    self.last_render_time = time.time()
                     self.last_render = fut.result()
 
                 self.render_future = self.field_render_executor.submit(run_and_store)
@@ -178,7 +196,7 @@ class UIManager:
             if self.last_render is not None:
                 image = self.last_render
 
-            return self.renderer.render_image_with_caption(image, f"RA: {ra:.4f}, DEC: {dec:.4f}")
+            return self.renderer.render_image_with_caption(image, f"RA: {ra:.4f}, DEC: {dec:.4f} ({(time.time()-self.last_render_time):.1f})", "target")
         except Exception as e:
             print(f"Error rendering navigation: {e}")
             return self.renderer.render_image_with_caption(image, "Error rendering navigation")

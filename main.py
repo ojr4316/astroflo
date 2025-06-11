@@ -12,7 +12,7 @@ from Astroflo import Astroflo
 
 from capture.FakeCamera import FakeCamera
 from solve.astrometry_handler import AstrometryNetSolver
-#from solve.tetra3 import Tetra3Solver
+from solve.tetra3 import Tetra3Solver
 
 from astronomy.Telescope import Telescope
 from astronomy.celestial import CelestialObject
@@ -55,7 +55,7 @@ def main(operation_mode: OperationMode = OperationMode.AUTO):
     ui_thread = threading.Thread(target=ui.loop, daemon=True)
     ui_thread.start()
 
-    solver = AstrometryNetSolver()
+    solver = Tetra3Solver()
     cam = build_camera()
 
     flo = Astroflo(cam, solver, scope)

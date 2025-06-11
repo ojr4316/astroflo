@@ -43,7 +43,7 @@ class Camera(ABC):
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = os.path.join(
             self.save_dir, 
-            f"{timestamp}.jpg"
+            "test.jpg"#f"{timestamp}.jpg"
         )
         cv2.imwrite(filename, cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
         return filename

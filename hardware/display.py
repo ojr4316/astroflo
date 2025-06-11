@@ -19,14 +19,13 @@ class ScreenRenderer:
     def _transform(self, img):
         return img.rotate(-90)
 
-    def render_image_with_caption(self, image: Image.Image, caption: str) -> Image.Image:
+    def render_image_with_caption(self, image: Image.Image, top_caption: str, bot_caption: str = "") -> Image.Image:
         img = Image.new("RGB", (self.WIDTH, self.HEIGHT), self.COLOR_BLACK)
         draw = ImageDraw.Draw(img)
         img.paste(image, (0, 0))
-        # Draw caption
-        #bbox = draw.textbbox((0, 0), caption, font=self.font)
-        #w, h = bbox[2] - bbox[0], bbox[3] - bbox[1]
-        draw.text((1, 0), caption, font=self.font, fill=self.COLOR_GRAY)
+
+        draw.text((1, 0), top_caption, font=self.font, fill=self.COLOR_GRAY)
+        draw.text((1, self.HEIGHT - 20), bot_caption, font=self.font, fill=self.COLOR_GRAY)
         return self._transform(img)
 
     def render_menu(self, question: str, buttons: list, selected_idx: int, has_back: bool = False) -> Image.Image:

@@ -170,6 +170,7 @@ class UIManager:
             if self.render_future is None or self.render_future.done():
                 def run_and_store():
                     try:
+                        return self.scope.target_manager.simple_nav(ra, dec)
                         plot = enhance_telescope_field(self.scope)
                         plt.close(plot.fig)
                         buf = io.BytesIO()
@@ -196,7 +197,7 @@ class UIManager:
             if self.last_render is not None:
                 image = self.last_render
 
-            return self.renderer.render_image_with_caption(image, f"RA: {ra:.4f}, DEC: {dec:.4f} ({(time.time()-self.last_render_time):.1f})", "target")
+            return self.renderer.render_image_with_caption(image, f"RA:{ra:.4f}|DEC:{dec:.4f} ({(time.time()-self.last_render_time):.1f})", "target")
         except Exception as e:
             print(f"Error rendering navigation: {e}")
             return self.renderer.render_image_with_caption(image, "Error rendering navigation")

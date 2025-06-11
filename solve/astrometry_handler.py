@@ -55,7 +55,7 @@ class AstrometryNetSolver(Solver):
         return [cmd[-1], "Failed", float("-inf")]
 
     def run_solver(self, cmd):
-        print(f"Running command: {' '.join(cmd)}")
+        #print(f"Running command: {' '.join(cmd)}")
         solve = subprocess.Popen(
             cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True
         )

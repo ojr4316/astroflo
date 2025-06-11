@@ -12,7 +12,7 @@ from Astroflo import Astroflo
 
 from capture.FakeCamera import FakeCamera
 from solve.astrometry_handler import AstrometryNetSolver
-from solve.tetra3 import Tetra3Solver
+#from solve.tetra3 import Tetra3Solver
 
 from astronomy.Telescope import Telescope
 from astronomy.celestial import CelestialObject
@@ -55,7 +55,7 @@ def main(operation_mode: OperationMode = OperationMode.AUTO):
     ui_thread = threading.Thread(target=ui.loop, daemon=True)
     ui_thread.start()
 
-    solver = Tetra3Solver()
+    solver = AstrometryNetSolver()
     cam = build_camera()
 
     flo = Astroflo(cam, solver, scope)
@@ -77,8 +77,12 @@ def main(operation_mode: OperationMode = OperationMode.AUTO):
                 ui_thread.join()
         case OperationMode.TEST_UI:
 
-            scope.set_position(279.6348, 8.0315)
-
+            #scope.set_position(279.6348, 8.0315)
+            scope.set_position(200.98785, 54.7958) # Mizar
+            scope.set_camera_offset(2.0, 0.0)
+            scope.target_manager.set_target(CelestialObject("Alcor", 4.0, "Double", "", 201.31280, 54.9915, "", True))
+            print(scope.target_manager.target)
+            #scope.set_position(0.0, 0.0)
             ui.state = ScreenState.NAVIGATE #ui.selected = 27
             #scope.target_manager.catalog = "messier"
             #m45 = scope.target_manager.catalog_loader.search_objects(name="M45")
@@ -88,10 +92,9 @@ def main(operation_mode: OperationMode = OperationMode.AUTO):
             #scope.target_manager.set_target(target)
             
             #scope.set_camera_offset(0.0, 0.0)
-            print(scope.get_position())
-            time.sleep(5)
+            ui.render()
+            time.sleep(1)
             img = ui.render()
-            time.sleep(5)
             img.show()
 
     

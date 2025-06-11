@@ -1,20 +1,18 @@
 import math
-from starplot import OpticPlot, _
+from starplot import OpticPlot, BasePlot, _
 from starplot.styles import PlotStyle, LabelStyle, ZOrderEnum, ObjectStyle, MarkerStyle, FillStyleEnum, MarkerSymbolEnum
-from astropy.coordinates import SkyCoord
-from skyfield.api import load
 import numpy as np
-from astronomy.Telescope import Telescope
+from astronomy.Telescope import Telescope, ephemeris
 import astropy.units as u
 
 common_font = {
-    "font_size": 6,
+    "font_size": 10,
     "font_color": "#ffffff",
     "font_weight": "normal"
 }
 
 big_font = {
-    "font_size": 8,
+    "font_size": 12,
     "font_color": "#ffffff",
     "font_weight": "bold"
 }
@@ -89,15 +87,6 @@ style = PlotStyle(background_color="#200000",
                               font_color="#fff"
                           ),
                       )).extend(style_overrides)
-
-# TODO: MOVE COMBINE
-from utils import is_pi
-if is_pi():
-    ephemeris = "/home/owen/astroflo/de440s.bsp"
-else:
-    ephemeris = 'de440s.bsp'
-planets = load(ephemeris)
-ts = load.timescale()
 
 def calculate_arrow_params(center_ra, center_dec, target_ra, target_dec, fov_radius):
     dra = (target_ra - center_ra) * math.cos(math.radians(center_dec))
@@ -185,10 +174,12 @@ def add_target_indicator(plot, target_ra, target_dec, fov_radius, color="#05ffff
         add_off_field_arrow(plot, center_ra, center_dec, target_ra, target_dec, fov_radius, color)
 
 def enhance_telescope_field(telescope, plot=None):
-    if plot is None and telescope.get_position() != None:
+    if plot is None:
         plot = create_telescope_field(telescope)
-    
-    if telescope.target_manager.target is not None:
+        # Cannot use Starplots without generating a full field, so can't just do arrow :(
+
+    if telescope.target_manager.target is not None and telescope.get_position() != None:
+        print("here?")
         target = telescope.target_manager.target
 
         add_target_indicator(
@@ -220,7 +211,8 @@ def create_telescope_field(telescope: Telescope, resolution=240):
     lim = telescope.get_limiting_magnitude()
 
     plot.stars(
-        where_labels=[_.magnitude < 2.5], #where=[_.magnitude < 9], 
+        where_labels=[_.magnitude < 5], 
+        where=[_.magnitude < 10], 
         size_fn=lambda star: np.clip(5 * (lim - star.magnitude), 0 , 1000),
         alpha_fn=lambda star: np.clip(1 - (star.magnitude/lim), 0, 1),
         catalog='big-sky')

@@ -33,7 +33,7 @@ class RPiCamera(Camera):
         self.last_metadata = self.picam2.capture_metadata()            
 
         return Image.open("./captures/20250526_225300.jpg")
-        
+        self.save_frame(frame)
         return frame#self.save_frame(frame)
  
 
@@ -60,7 +60,7 @@ class RPiCamera(Camera):
         actual_gain = self.last_metadata.get("AnalogueGain", 0)
 
         attempts = 0
-        while (abs(goal_exposure-actual_exp) > 10 or abs(goal_gain-actual_gain) > 0.1) and attempts < max_attempts:
+        while (abs(goal_exposure-actual_exp) > 1000 or abs(goal_gain-actual_gain) > 0.1) and attempts < max_attempts:
             self.picam2.set_controls({
                 "ExposureTime": int(goal_exposure),
                 "AnalogueGain": float(goal_gain)

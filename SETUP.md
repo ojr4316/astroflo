@@ -21,5 +21,3 @@ Enter `/cedar-detect` and build `cargo build --release`
 
 Copy executable into cedar-solve
 `cp /home/pi/cedar-detect/target/release/cedar-detect-server /home/pi/cedar-solve/tetra3/bin`
-
-

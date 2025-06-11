@@ -1,14 +1,19 @@
 numpy
-opencv-python
 requests
-Pillow 
 matplotlib
 scipy
 photutils
 pytest
+
+# Imaging
+Pillow 
+mahotas
+opencv-python
+
+# Astronomy
+alpyca
 skyfield
 starplot
-mahotas
 git+https://github.com/esa/tetra3.git
 
 # Cedar dependencies

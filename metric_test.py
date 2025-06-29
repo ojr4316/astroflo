@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-from feedback_classifier.ImagingFeedback import ImagingFeedback    
+from feedback_classifier.image_feedback import ImagingFeedback    
 import numpy as np
 import os
 # TODO: Investigate XAI posthoc explainability with rules

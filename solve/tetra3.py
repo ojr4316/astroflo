@@ -1,4 +1,4 @@
-from solve.Solver import Solver
+from solve.solver import Solver
 import math
 import numpy as np
 np.math = math

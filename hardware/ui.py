@@ -4,13 +4,10 @@ import os
 import io
 from enum import Enum
 from PIL import Image
-from skyfield.api import load
-import concurrent.futures
+
 from hardware.display import ScreenRenderer
 from hardware.input import Input
 from astronomy.Telescope import Telescope
-from astronomy.field import enhance_telescope_field
-import matplotlib.pyplot as plt
 
 class ScreenState(Enum):
     MAIN_MENU = 0
@@ -18,6 +15,9 @@ class ScreenState(Enum):
     CONFIGURE_CAMERA = 2
     TARGET_LIST = 3
     TARGET_SELECT = 4
+    DEBUG_SOFTWARE = 5
+    DEBUG_HARDWARE = 6
+    DEBUG_SOLVE = 7
     NAVIGATE = 10
 
 class UIManager:
@@ -26,9 +26,6 @@ class UIManager:
         self.state = ScreenState.MAIN_MENU
         self.renderer = ScreenRenderer()
         self.input = Input()
-        self.screen = None
-        
-        from hardware.screen import Screen
         self.screen = Screen()
         self.screen.set_brightness(0.8)
 
@@ -36,6 +33,12 @@ class UIManager:
         self.max_idx = 2
 
         self.setup_input()
+
+        self.field_render_executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+        self.render_future = None
+        self.last_render = None
+
+        self.last_render_time = time.time()
 
         self.field_render_executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         self.render_future = None
@@ -162,45 +165,11 @@ class UIManager:
     def render_navigation(self):
         image = Image.new("RGB", (240, 240))
         if self.scope.position is None:
-            return self.renderer.render_image_with_caption(image, "Waiting for first solve...")
-        try:
-            pos = self.scope.get_position()
-            ra, dec = pos[0], pos[1]
-            # Actual field rendering is costly, so separate thread
-            if self.render_future is None or self.render_future.done():
-                def run_and_store():
-                    try:
-                        return self.scope.target_manager.simple_nav(ra, dec)
-                        plot = enhance_telescope_field(self.scope)
-                        plt.close(plot.fig)
-                        buf = io.BytesIO()
-                        plot.export(buf, format='png')
-                        buf.seek(0)
-                        return Image.open(buf)
-                    except Exception as e:
-                        print(f"Background enhancement error: {e}")
-                        return None
+            return self.renderer.render_image_with_caption(image, "N/A")
+        
+        ra, dec = self.scope.position
 
-                def handle_result(fut):
-                    self.last_render_time = time.time()
-                    self.last_render = fut.result()
-
-                self.render_future = self.field_render_executor.submit(run_and_store)
-                self.render_future.add_done_callback(handle_result)
-
-            #plot = enhance_telescope_field(self.scope)
-            #buf = io.BytesIO()
-            #plot.export(buf, format='png')
-            #buf.seek(0)
-            #image = Image.open(buf)
-
-            if self.last_render is not None:
-                image = self.last_render
-
-            return self.renderer.render_image_with_caption(image, f"RA:{ra:.4f}|DEC:{dec:.4f} ({(time.time()-self.last_render_time):.1f})", "target")
-        except Exception as e:
-            print(f"Error rendering navigation: {e}")
-            return self.renderer.render_image_with_caption(image, "Error rendering navigation")
+        return self.renderer.render_image_with_caption(image, f"RA: {ra:.4f}              DEC: {dec:.4f}")
 
 
     def render(self):
@@ -211,7 +180,7 @@ class UIManager:
             case ScreenState.CONFIGURE_CAMERA: return self.render_camera_settings()
             case ScreenState.TARGET_LIST: return self.render_target_lists()
             case ScreenState.TARGET_SELECT: return self.render_target_select()
-
+            case ScreenState.DEBUG_SOFTWARE: return self.render_debug_software()
             case ScreenState.NAVIGATE: return self.render_navigation()
             #case ScreenState.TARGET_LIST: return self.
 

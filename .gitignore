@@ -6,3 +6,4 @@ captures/**
 **/*.bsp
 **/.lgd-nfy0
 **/.vscode/
+astronomy/catalog/**

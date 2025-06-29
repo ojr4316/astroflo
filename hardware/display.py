@@ -127,6 +127,19 @@ class ScreenRenderer:
             y += btn_height + btn_margin
             
         return self._transform(img)
+    
+    def render_many_text(self, texts: list) -> Image.Image:
+        img = Image.new("RGB", (self.WIDTH, self.HEIGHT), self.COLOR_BLACK)
+        draw = ImageDraw.Draw(img)
+        
+        y = 10
+        for text in texts:
+            bbox = draw.textbbox((0, 0), text, font=self.font)
+            w, h = bbox[2] - bbox[0], bbox[3] - bbox[1]
+            draw.text((self.WIDTH//2 - w//2, y), text, font=self.font, fill=self.COLOR_WHITE)
+            y += h + 5
+        
+        return self._transform(img)
 
 # Example usage:
 #renderer = ScreenRenderer()

@@ -2,7 +2,7 @@ import subprocess
 import re
 import os
 
-from solve.Solver import Solver
+from solve.solver import Solver
 
 base_cmd = [ "solve-field", "--overwrite", "--no-plots",
         "--new-fits", "none",
@@ -55,13 +55,13 @@ class AstrometryNetSolver(Solver):
         return [cmd[-1], "Failed", float("-inf")]
 
     def run_solver(self, cmd):
-        #print(f"Running command: {' '.join(cmd)}")
+        print(f"Running command: {' '.join(cmd)}")
         solve = subprocess.Popen(
             cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True
         )
         highest_odds = float("-inf")
         for line in solve.stdout:
-            #print(line)
+            print(line)
             if "log-odds" in line:
                 parts = line.strip().split(" ")
                 odds = float(parts[2])

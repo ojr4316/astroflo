@@ -21,10 +21,10 @@ from hardware.ui import UIManager, ScreenState
 
 from utils import is_pi
 
-from astronomy.stellarium import StellariumConnection
-
 import matplotlib
-matplotlib.use("Agg")
+
+if is_pi():
+    matplotlib.use("Agg")
 
 def build_camera():
     if is_pi():
@@ -42,7 +42,6 @@ class OperationMode(Enum):
     MANUAL = 0
     AUTO = 1
     TEST_UI = 2
-    TEST_STEL=3
 
 def main(operation_mode: OperationMode = OperationMode.AUTO):
     scope = Telescope(
@@ -51,12 +50,6 @@ def main(operation_mode: OperationMode = OperationMode.AUTO):
         eyepiece=25,
         eyepiece_fov=40,
     )
-
-    if operation_mode == OperationMode.TEST_STEL:
-        stel = StellariumConnection(scope)
-        stel.run_server()
-        while True: pass
-        return
 
     ui = UIManager(scope)
     ui_thread = threading.Thread(target=ui.loop, daemon=True)
@@ -87,11 +80,10 @@ def main(operation_mode: OperationMode = OperationMode.AUTO):
 
             #scope.set_position(279.6348, 8.0315)
             scope.set_position(200.98785, 54.7958) # Mizar
-            scope.set_camera_offset(2.0, 0.0)
+            scope.set_camera_offset(0.0, 0.0)
             #scope.target_manager.set_target(CelestialObject("Alcor", 4.0, "Double", "", 201.31280, 54.9915, "", True))
-            print(scope.target_manager.target)
             #scope.set_position(0.0, 0.0)
-            ui.state = ScreenState.DEBUG_SOFTWARE #ui.selected = 27
+            ui.state = ScreenState.NAVIGATE #ui.selected = 27
             #scope.target_manager.catalog = "messier"
             #m45 = scope.target_manager.catalog_loader.search_objects(name="M45")
             #target = scope.observe_local("jupiter")
@@ -101,11 +93,9 @@ def main(operation_mode: OperationMode = OperationMode.AUTO):
             
             #scope.set_camera_offset(0.0, 0.0)
             ui.render()
-            time.sleep(1)
+            time.sleep(3)
             img = ui.render()
             img.show()
-            while True: 
-                time.sleep(1)
 
     
     
@@ -114,10 +104,8 @@ if __name__ == "__main__":
     parser.add_argument("--ui", action="store_true", help="Run in test mode manually rendering single UI frame")
     parser.add_argument("--stel", action="store_true", help="Run Stellarium server")
     args = parser.parse_args()
-    
-    if args.stel:
-        main(OperationMode.TEST_STEL)
-    elif args.ui:
+
+    if args.ui:
         main(OperationMode.TEST_UI)
     else:
         main(OperationMode.AUTO)

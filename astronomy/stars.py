@@ -4,6 +4,8 @@ import numpy as np
 import time
 import matplotlib.pyplot as plt
 import os
+from utils import plt_to_img
+import threading
 
 def clean(n) -> str:
     if n is np.ma.masked:
@@ -31,8 +33,8 @@ class Stars:
         return results
 
     def search_by_coordinate(self, ra: float, dec: float, radius: float = 0.05): # FOV in degrees
-        ra = float(ra.item())
-        dec = float(dec.item())
+        ra = float(ra) #.item()
+        dec = float(dec)
         radius = float(radius)
 
         # Convert radius from degrees to radians
@@ -107,32 +109,36 @@ class Stars:
 
         return results
 
+    _render_lock = threading.Lock()
+
     def render_view(self, projected):
-        fig, ax = plt.subplots()
-        fig.set_facecolor('black')
-        fig.set_dpi(184)
-        ax.set_aspect('equal')
-        ax.set_xlim(-1, 1)
-        ax.set_ylim(-1, 1)
+        with self._render_lock:
+            fig, ax = plt.subplots()
+            fig.set_facecolor('black')
+            fig.set_dpi(100) # 184
+            ax.set_aspect('equal')
+            ax.set_xlim(-1, 1)
+            ax.set_ylim(-1, 1)
 
-        # Draw FOV circle
-        circle = plt.Circle((0, 0), 1, color='red', fill=False)
-        ax.add_patch(circle)
+            # Draw FOV circle
+            circle = plt.Circle((0, 0), 1, color='red', fill=False)
+            ax.add_patch(circle)
 
-        # Plot stars
-        for obj in projected:
-            star = obj['star']
-            x, y = obj['x'], obj['y']
-            mag = star['Vmag']
-            size = max(1, 15 - mag)  # Bright stars are bigger
-            ax.plot(x, y, 'o', markersize=size, color='white')
+            # Plot stars
+            for obj in projected:
+                star = obj['star']
+                x, y = obj['x'], obj['y']
+                mag = star['Vmag']
+                size = max(1, 15 - mag)  # Bright stars are bigger
+                ax.plot(x, y, 'o', markersize=size, color='white')
 
-            if mag < 6:
-                ax.text(x + 0.03, y, star['Name'], color='red', fontsize=8)
+                if mag < 6:
+                    ax.text(x + 0.03, y, star['Name'], color='red', fontsize=8)
 
-        ax.set_facecolor('black')
-        plt.axis('off')
-        #plt.show()
+            ax.set_facecolor('black')
+            plt.axis('off')
+            #plt.close()
+            return plt_to_img(fig)
 
 
 

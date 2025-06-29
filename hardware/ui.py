@@ -165,11 +165,81 @@ class UIManager:
     def render_navigation(self):
         image = Image.new("RGB", (240, 240))
         if self.scope.position is None:
-            return self.renderer.render_image_with_caption(image, "N/A")
-        
-        ra, dec = self.scope.position
+            return self.renderer.render_image_with_caption(image, "Waiting for first solve...")
+        try:
+            pos = self.scope.get_position()
+            ra, dec = pos[0], pos[1]
+            # Actual field rendering is costly, so separate thread
+            if self.render_future is None or self.render_future.done():
+                def run_and_store():
+                    try:
+                        stars = self.scope.target_manager.stars
+                        r = stars.radius_from_telescope(self.scope.focal_length, self.scope.eyepiece, self.scope.eyepiece_fov)
+                        print(f"Rendering field with radius {r:.2f} degrees at RA: {ra:.4f}, DEC: {dec:.4f}")
+                        nearby = stars.search_by_coordinate(ra=ra, dec=dec, radius=r)
+                        for star in nearby:
+                            print(star)
+                            print(f"Found star: {star['Name']} at RA: {star['RAdeg']:.4f}, DEC: {star['DEdeg']:.4f}")
+                        projected = stars.project_to_view(nearby, center_ra=ra, center_dec=dec, radius_deg=r, rotation=180)
+                        return stars.render_view(projected)
+                        return self.scope.target_manager.simple_nav(ra, dec)
+                        plot = enhance_telescope_field(self.scope)
+                        plt.close(plot.fig)
+                        buf = io.BytesIO()
+                        plot.export(buf, format='png')
+                        buf.seek(0)
+                        return Image.open(buf)
+                    except Exception as e:
+                        print(f"Nav Error: {e}")
+                        return None
 
-        return self.renderer.render_image_with_caption(image, f"RA: {ra:.4f}              DEC: {dec:.4f}")
+                def handle_result(fut):
+                    self.last_render_time = time.time()
+                    self.last_render = fut.result()
+
+                self.render_future = self.field_render_executor.submit(run_and_store)
+                self.render_future.add_done_callback(handle_result)
+
+            if self.last_render is not None:
+                image = self.last_render
+
+            return self.renderer.render_image_with_caption(image, f"RA:{ra:.4f}|DEC:{dec:.4f} ({(time.time()-self.last_render_time):.1f})", "target")
+        except Exception as e:
+            print(f"Error rendering navigation: {e}")
+            return self.renderer.render_image_with_caption(image, "Error rendering navigation")
+
+
+    def render_debug_software(self):
+        # get time 
+        time = self.scope.get_time()
+        location = self.scope.wgsLocation
+
+        local = pytz.timezone("America/New_York")
+        local_time = time.astimezone(local)
+        julian_date = time.tt
+        utc = time.utc_strftime()
+
+        lst = (time.gast + location.longitude.degrees / 15.0) % 24.0
+
+        position = self.scope.get_position()
+
+        screen_text = [
+            f"Local: {local_time.strftime('%Y-%m-%d %H:%M:%S')}",
+            f"UTC: {utc}",
+            f"Julian Date: {julian_date:.5f}",
+            f"LST: {lst:.2f}h",
+            f"RA:{position[0]:.4f} | DEC:{position[1]:.4f}",
+            f"{location.latitude.degrees:.4f}°N, {location.longitude.degrees:.4f}°E ({location.elevation.m:.0f}m)",
+            f"Viewing Angle: {self.scope.viewing_angle}°",
+            f"Lens: {self.scope.eyepiece}mm ({self.scope.eyepiece_fov}° AFOV)",
+            f"Aperture: {self.scope.aperture}mm",
+            f"Focal Length: {self.scope.focal_length}mm",
+        ]
+ 
+        return self.renderer.render_many_text(screen_text)
+
+
+
 
 
     def render(self):

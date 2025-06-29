@@ -49,7 +49,10 @@ class Astroflo:
         self.solver.downsample = 4
         self.running = True
         self.capture_thread.start()
-        self.stellarium.run_server()
+
+        stel = False
+        if stel:
+            self.stellarium.run_server()
 
    
     def stop(self):

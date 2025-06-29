@@ -1,4 +1,4 @@
-from astronomy.catalog import CatalogLoader, CelestialObject, get_apparent_radec
+from astronomy.stars import Stars
 from astropy.coordinates import SkyCoord, EarthLocation, GCRS
 
 from PIL import Image, ImageDraw
@@ -8,9 +8,11 @@ class TargetManager:
 
     def __init__(self, location: EarthLocation):
         self.location = location
-        self.catalog_loader = CatalogLoader()
+        self.stars = Stars()
 
-        self.target = None
+        self.ra = None
+        self.dec = None
+        self.name = None
 
         self.catalog = None
         self.index = 0 
@@ -18,20 +20,19 @@ class TargetManager:
         self.distance = 0.0
 
     
-    def set_target(self, target: CelestialObject):
-        self.target = target
+    def set_target(self, ra: float, dec: float, name: str = None):
+        self.ra = ra
+        self.dec = dec
+        self.name = name
         
     def get_target_position(self):
-        if self.target is None:
+        if self.ra is None:
             return None
-        return (self.target.ra, self.target.dec) #get_apparent_radec(self.target.ra, self.target.dec, self.location)
-    
-    def get_catalog(self):
-        return [t.name for t in self.catalog_loader.all[self.catalog]]
-    
+        return (self.ra, self.dec) #get_apparent_radec(self.target.ra, self.target.dec, self.location)
+
 
     def simple_nav(self, current_ra: float, current_dec: float, field_size: float = 0.8333):
-        if self.target is None:
+        if self.ra is None:
             return None
 
         target_ra, target_dec = self.get_target_position()

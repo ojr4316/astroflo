@@ -5,11 +5,7 @@ from astropy.coordinates import EarthLocation
 import astropy.units as u
 from starplot.optics import Reflector, Optic
 from skyfield.api import wgs84, load
-from astronomy.celestial import CelestialObject
-
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-SETTINGS_FILE = os.path.join(BASE_DIR, "settings.txt")
-COORD_LOG = os.path.join(BASE_DIR, "coord_log.txt")
+from astronomy.settings import TelescopeSettings
 
 rochesterLat = 43.1566
 rochesterLong = -77.6088
@@ -44,6 +40,9 @@ class Telescope:
         self.camera_offset = (0, 0)
         self.viewing_angle = 0 # 0-359deg
 
+        # above settings managed by TelescopeSettings
+        self.settings = TelescopeSettings(self)
+
         self.location = rochester
         self.wgsLocation = wgs84.latlon(rochesterLat, rochesterLong, rochesterElevation) 
 
@@ -53,8 +52,9 @@ class Telescope:
         self.timescale = load.timescale()
         self.time = self.timescale.now() #self.timescale.utc(2025, 3, 21, 2, 0, 0)
         
-        self.load_settings()
-    
+    def set_time(self, time):
+        self.time = self.timescale.utc(time)
+
     def get_time(self):
         if self.time is None:
             return self.timescale.now()
@@ -75,7 +75,7 @@ class Telescope:
     def optic(self) -> Optic:
         return Reflector(self.focal_length, self.eyepiece, self.eyepiece_fov + 10) # raise to better match stellarium
 
-    def observe_local(self, target) -> CelestialObject:
+    def observe_local(self, target):
         target = get_planet(target)
         if target is None:
             raise ValueError(f"Target {target} not found in ephemeris")
@@ -86,12 +86,12 @@ class Telescope:
         # If so, implement a system that manually marks planets
         # Starplots current system plots J2000 coordinates, but are slightly off for planets
 
-        local = CelestialObject("Planet", 0, "Planet", "", ra.degrees, dec.degrees, "", False)
-        return local
+        #local = CelestialObject("Planet", 0, "Planet", "", ra.degrees, dec.degrees, "", False)
+        return None
 
     def set_camera_offset(self, x: float, y: float):
         self.camera_offset = (x, y)
-        self.save_settings()
+        self.settings.save()
 
     def get_position(self):
         if self.position is None:
@@ -104,12 +104,8 @@ class Telescope:
         if self.position is not None:
             self.last_position = self.position
         self.position = (ra, dec)
-        self.save_coord()
-    
-    def save_coord(self):
-        with open(COORD_LOG, "a") as f:
-            log = f"{self.get_time().utc_strftime('%Y-%m-%d %H:%M:%S')} - {self.get_position()}\n"
-            f.write(log)
+        self.settings.save_coord()
+ 
 
     def modify(self, idx, increase=False): # Telescope Settings Page, TODO: Maybe modify UI interally to adjust values
         match(idx):
@@ -117,35 +113,4 @@ class Telescope:
             case 1: self.focal_length += (1 if increase else -1)
             case 2: self.eyepiece += (1 if increase else -1)
             case 3: self.eyepiece_fov += (1 if increase else -1)
-        self.save_settings()
-
-    def get_settings(self): # Telescope Settings Page
-        return {"aperture": self.aperture, "focal_length": self.focal_length, "eyepiece": self.eyepiece, "eyepiece_fov": self.eyepiece_fov}
-
-    def get_cam_settings(self): # Camera Settings Page
-        return {"x_offset": f"{self.camera_offset[0]:.1f}", "y_offset": f"{self.camera_offset[1]:.1f}", "view_angle": f"{self.viewing_angle}"}
-    
-    def save_settings(self): 
-        settings = {**self.get_settings(), **self.get_cam_settings()}
-        with open(SETTINGS_FILE, "w") as f:
-            for key, value in settings.items():
-                f.write(f"{key}: {value}\n")
-
-    def load_settings(self):
-        if not os.path.exists(SETTINGS_FILE):
-            self.save_settings()
-            return
-        settings = {}
-        with open(SETTINGS_FILE, "r") as f:
-            for line in f:
-                key, value = line.strip().split(": ")
-                settings[key] = value
-        self.aperture = int(settings["aperture"])
-        self.focal_length = int(settings["focal_length"])
-        self.eyepiece = int(settings["eyepiece"])
-        self.eyepiece_fov = int(settings["eyepiece_fov"])
-        self.camera_offset = (float(settings["x_offset"]), float(settings["y_offset"]))
-        self.viewing_angle = int(settings["view_angle"])
-        print(f"Settings loaded from {SETTINGS_FILE}")
-
-    
+        self.settings.save()

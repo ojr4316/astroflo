@@ -1,4 +1,4 @@
-from capture.Camera import Camera
+from capture.camera import Camera
 import numpy as np
 from PIL import Image
 import time

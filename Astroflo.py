@@ -1,13 +1,18 @@
 from typing import List, Optional
 from queue import Queue
 from threading import Thread, Lock
+from datetime import timedelta
 import time
 import os
 from datetime import datetime
-from capture.Camera import Camera
-from solve.Solver import Solver
-from clean.ImageProcessor import ImageProcessor
-from astronomy.Telescope import Telescope
+from capture.camera import Camera
+from solve.solver import Solver
+from clean.image_processor import ImageProcessor
+from astronomy.telescope import Telescope
+from astronomy.stellarium import StellariumConnection
+from astropy.coordinates import SkyCoord, EarthLocation, AltAz
+from astropy.time import Time
+import astropy.units as u
 
 class Astroflo:
     capturer: Camera = None
@@ -25,21 +30,27 @@ class Astroflo:
         self.latest_timestamp = None
         self.state_lock = Lock()
         
-        self.capture_thread = Thread(target=self._capture_loop, daemon=True)
-        self.running = False
+        self.stellarium = StellariumConnection(scope)
 
         self.fails = 0
+        self.running = False
+
+        self.capture_thread = Thread(target=self._capture_loop, daemon=True)
+        
     
     def start(self):
         # Configure camera resasonably before start
-        self.capturer.configure(400_000)
+        self.capturer.configure(15_000_000)
         self.capturer.start()
         
         # Configure Solver
-        #self.solver.limit = 100
-        #self.solver.scale = 19
+        self.solver.limit = 30
+        self.solver.scale = 19
+        self.solver.downsample = 4
         self.running = True
         self.capture_thread.start()
+        self.stellarium.run_server()
+
    
     def stop(self):
         self.running = False
@@ -52,7 +63,8 @@ class Astroflo:
             if img is not None:
                 timestamp = datetime.now()
                 Thread(target=self._process_image, args=(img, timestamp), daemon=True).start()
-    
+
+
     def _process_image(self, img, timestamp):
         try:
             processed_img = img
@@ -62,17 +74,8 @@ class Astroflo:
             with self.state_lock:
                 if result is not None:
                     self.fails = 0
-                    image, coords, odds = result
-                
                     if (not self.latest_timestamp or timestamp > self.latest_timestamp) and result[1] != 'Failed':
-                        self.latest = {
-                            'result': result,
-                            'timestamp': timestamp
-                        }
-                        self.latest_timestamp = timestamp
-                        ra, dec = coords
-                        #self.scope.set_position(ra, dec)
-                            #os.remove(f"./{image}") # Discard image
+                        self.set_latest(result, timestamp)
                 else: # Adjust exposure until solvable
                     self.fails += 1
                     if self.fails >= 10:
@@ -83,8 +86,37 @@ class Astroflo:
                         self.capturer.configure(current+100_000)
         except Exception as e:
             print(f"Error processing image from {timestamp}: {e}")
-    
-    def get_latest_result(self):
+
+    def set_latest(self, result, timestamp):
+        image, coords, odds = result
+        self.latest = {
+            'result': result,
+            'timestamp': timestamp
+        }
+        self.latest_timestamp = timestamp
+        ra, dec = coords
+        self.scope.set_position(ra, dec)
+        print(f"found new position: {ra}, {dec} at {timestamp}")
+        self.stellarium.new_position()
+            
+     
+    def drift(self, interval=60*30):
         with self.state_lock:
-            return self.latest
+            if self.latest is None:
+                return
+            utc = self.scope.time.utc_datetime()
+            ra, dec = self.scope.position # no cam offset
+
+            start = Time(utc)
+            end = start + interval * u.s
+
+            icrs = SkyCoord(ra=ra*u.deg, dec=dec*u.deg, frame='icrs')
+            altaz = icrs.transform_to(AltAz(obstime=start, location=self.scope.location))
+            drifted = altaz.transform_to(AltAz(obstime=end, location=self.scope.location)).transform_to('icrs')
+
+            new_utc = utc + timedelta(seconds=interval)
+            self.scope.set_time(new_utc)
+            self.scope.set_position(drifted.ra.deg, drifted.dec.deg)
+            self.stellarium.new_position()
+            return drifted.ra.deg, drifted.dec.deg
 

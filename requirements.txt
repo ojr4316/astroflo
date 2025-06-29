@@ -4,6 +4,7 @@ matplotlib
 scipy
 photutils
 pytest
+pytz
 
 # Imaging
 Pillow 

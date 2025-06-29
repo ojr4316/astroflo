@@ -1,4 +1,4 @@
-from capture.Camera import Camera
+from capture.camera import Camera
 import time
 import datetime
 import os

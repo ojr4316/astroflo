@@ -3,14 +3,14 @@ import time
 import os
 import io
 from enum import Enum
-from PIL import Image
-from skyfield.api import load
+from PIL import Image, ImageDraw, ImageFont
+from skyfield.api import load, wgs84
 import concurrent.futures
 from hardware.display import ScreenRenderer
 from hardware.input import Input
-from astronomy.Telescope import Telescope
-from astronomy.field import enhance_telescope_field
+from astronomy.telescope import Telescope
 import matplotlib.pyplot as plt
+import pytz
 
 class ScreenState(Enum):
     MAIN_MENU = 0
@@ -18,6 +18,9 @@ class ScreenState(Enum):
     CONFIGURE_CAMERA = 2
     TARGET_LIST = 3
     TARGET_SELECT = 4
+    DEBUG_SOFTWARE = 5
+    DEBUG_HARDWARE = 6
+    DEBUG_SOLVE = 7
     NAVIGATE = 10
 
 class UIManager:
@@ -203,6 +206,39 @@ class UIManager:
             return self.renderer.render_image_with_caption(image, "Error rendering navigation")
 
 
+    def render_debug_software(self):
+        # get time 
+        time = self.scope.get_time()
+        location = self.scope.wgsLocation
+
+        local = pytz.timezone("America/New_York")
+        local_time = time.astimezone(local)
+        julian_date = time.tt
+        utc = time.utc_strftime()
+
+        lst = (time.gast + location.longitude.degrees / 15.0) % 24.0
+
+        position = self.scope.get_position()
+
+        screen_text = [
+            f"Local: {local_time.strftime('%Y-%m-%d %H:%M:%S')}",
+            f"UTC: {utc}",
+            f"Julian Date: {julian_date:.5f}",
+            f"LST: {lst:.2f}h",
+            f"RA:{position[0]:.4f} | DEC:{position[1]:.4f}",
+            f"{location.latitude.degrees:.4f}°N, {location.longitude.degrees:.4f}°E ({location.elevation.m:.0f}m)",
+            f"Viewing Angle: {self.scope.viewing_angle}°",
+            f"Lens: {self.scope.eyepiece}mm ({self.scope.eyepiece_fov}° AFOV)",
+            f"Aperture: {self.scope.aperture}mm",
+            f"Focal Length: {self.scope.focal_length}mm",
+        ]
+ 
+        return self.renderer.render_many_text(screen_text)
+
+
+
+
+
     def render(self):
 
         match(self.state):
@@ -211,7 +247,7 @@ class UIManager:
             case ScreenState.CONFIGURE_CAMERA: return self.render_camera_settings()
             case ScreenState.TARGET_LIST: return self.render_target_lists()
             case ScreenState.TARGET_SELECT: return self.render_target_select()
-
+            case ScreenState.DEBUG_SOFTWARE: return self.render_debug_software()
             case ScreenState.NAVIGATE: return self.render_navigation()
             #case ScreenState.TARGET_LIST: return self.
 

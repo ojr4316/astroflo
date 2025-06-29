@@ -7,7 +7,7 @@ class ScreenRenderer:
     HEIGHT = 240
     COLOR_BLACK = (0, 0, 0)
     COLOR_WHITE = (255, 255, 255)
-    COLOR_GRAY = (100, 100, 100)
+    COLOR_GRAY = (100, 255, 100)
     BTN_COLOR = (60, 60, 60)
     BTN_SELECTED_COLOR = (140, 35, 35)
     FONT_PATH = fm.findfont(fm.FontProperties())
@@ -25,7 +25,7 @@ class ScreenRenderer:
         img.paste(image, (0, 0))
 
         draw.text((1, 0), top_caption, font=self.font, fill=self.COLOR_GRAY)
-        draw.text((1, self.HEIGHT - 20), bot_caption, font=self.font, fill=self.COLOR_GRAY)
+        draw.text((1, self.HEIGHT - 20), "No Target" if len(bot_caption) == 0  else bot_caption, font=self.font, fill=self.COLOR_GRAY)
         return self._transform(img)
 
     def render_menu(self, question: str, buttons: list, selected_idx: int, has_back: bool = False) -> Image.Image:

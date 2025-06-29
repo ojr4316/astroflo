@@ -173,6 +173,15 @@ class UIManager:
             if self.render_future is None or self.render_future.done():
                 def run_and_store():
                     try:
+                        stars = self.scope.target_manager.stars
+                        r = stars.radius_from_telescope(self.scope.focal_length, self.scope.eyepiece, self.scope.eyepiece_fov)
+                        print(f"Rendering field with radius {r:.2f} degrees at RA: {ra:.4f}, DEC: {dec:.4f}")
+                        nearby = stars.search_by_coordinate(ra=ra, dec=dec, radius=r)
+                        for star in nearby:
+                            print(star)
+                            print(f"Found star: {star['Name']} at RA: {star['RAdeg']:.4f}, DEC: {star['DEdeg']:.4f}")
+                        projected = stars.project_to_view(nearby, center_ra=ra, center_dec=dec, radius_deg=r, rotation=180)
+                        return stars.render_view(projected)
                         return self.scope.target_manager.simple_nav(ra, dec)
                         plot = enhance_telescope_field(self.scope)
                         plt.close(plot.fig)
@@ -181,7 +190,7 @@ class UIManager:
                         buf.seek(0)
                         return Image.open(buf)
                     except Exception as e:
-                        print(f"Background enhancement error: {e}")
+                        print(f"Nav Error: {e}")
                         return None
 
                 def handle_result(fut):
@@ -190,12 +199,6 @@ class UIManager:
 
                 self.render_future = self.field_render_executor.submit(run_and_store)
                 self.render_future.add_done_callback(handle_result)
-
-            #plot = enhance_telescope_field(self.scope)
-            #buf = io.BytesIO()
-            #plot.export(buf, format='png')
-            #buf.seek(0)
-            #image = Image.open(buf)
 
             if self.last_render is not None:
                 image = self.last_render

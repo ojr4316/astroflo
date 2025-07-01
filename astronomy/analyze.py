@@ -115,11 +115,8 @@ class ImageAnalysis:
         fwhm = (fwhm_x + fwhm_y) / 2.0 if (fwhm_x > 0 and fwhm_y > 0) else max(fwhm_x, fwhm_y)
         
         self.fwhm_values.append(fwhm)
-        
-        #plt.imshow(cropped_image, cmap='gray')
-        #plt.scatter(center_x, center_y, color='red', label='Centroid')
-        #plt.title(f'FWHM: {fwhm:.2f}, Brightest: {val:.1f}')
-        #plt.show()
+
+        # TODO: convert to radial FWHM calculation
 
         return fwhm, (center_x, center_y)
 
@@ -157,21 +154,21 @@ class ImageAnalysis:
         }
 
 
-times = []
+# times = []
 
-i = ImageAnalysis()
-start = time.time()
-i.add_image(np.array(Image.open('/Users/owen/astroflo/test_data/out_of_focus.jpg')))
+# i = ImageAnalysis()
+# start = time.time()
+# i.add_image(np.array(Image.open('/Users/owen/astroflo/test_data/out_of_focus.jpg')))
 
-times.append(time.time() - start)
-start = time.time()
-i.add_image(np.array(Image.open('/Users/owen/astroflo/test_data/bright_sky.jpg'))) 
-print(i.get_latest()) # 74.013 + 2.2278
-times.append(time.time() - start)
-start = time.time()
-i.add_image(np.array(Image.open('/Users/owen/astroflo/test_data/output_0.jpg')))
-print(i.get_latest()) # 13.3040 + 0.9596
-times.append(time.time() - start)
+# times.append(time.time() - start)
+# start = time.time()
+# i.add_image(np.array(Image.open('/Users/owen/astroflo/test_data/bright_sky.jpg'))) 
+# print(i.get_latest()) # 74.013 + 2.2278
+# times.append(time.time() - start)
+# start = time.time()
+# i.add_image(np.array(Image.open('/Users/owen/astroflo/test_data/output_0.jpg')))
+# print(i.get_latest()) # 13.3040 + 0.9596
+# times.append(time.time() - start)
 
-print(f"Processing times: {times}")
-print(f"Average time: {np.mean(times):.2f} seconds")
+# print(f"Processing times: {times}")
+# print(f"Average time: {np.mean(times):.2f} seconds")

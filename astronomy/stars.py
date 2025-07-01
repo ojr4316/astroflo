@@ -115,7 +115,7 @@ class Stars:
         with self._render_lock:
             fig, ax = plt.subplots()
             fig.set_facecolor('black')
-            fig.set_dpi(100) # 184
+            fig.set_dpi(50) # 184
             ax.set_aspect('equal')
             ax.set_xlim(-1, 1)
             ax.set_ylim(-1, 1)
@@ -133,11 +133,11 @@ class Stars:
                 ax.plot(x, y, 'o', markersize=size, color='white')
 
                 if mag < 6:
-                    ax.text(x + 0.03, y, star['Name'], color='red', fontsize=8)
+                    ax.text(x + 0.03, y, star['Name'], color='red', fontsize=12)
 
             ax.set_facecolor('black')
             plt.axis('off')
-            #plt.close()
+            #plt.close(plt.figure)
             return plt_to_img(fig)
 
 

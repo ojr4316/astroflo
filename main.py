@@ -13,7 +13,6 @@ from Astroflo import Astroflo
 from capture.fake_camera import FakeCamera
 from solve.astrometry_handler import AstrometryNetSolver
 from solve.fake_solver import FakeSolver
-#from solve.tetra3 import Tetra3Solver
 
 from astronomy.telescope import Telescope
 
@@ -23,8 +22,12 @@ from utils import is_pi
 
 import matplotlib
 
-if is_pi():
+from operation import OperationManager
+
+if os.name != 'nt':
     matplotlib.use("Agg")
+    # Windows really doesn't like Agg for multi-threading
+    # Mac and Linux NEED Agg for multi-threading
 
 def build_camera():
     if is_pi():
@@ -38,12 +41,40 @@ def build_camera():
         
     return cam
 
-class OperationMode(Enum):
-    MANUAL = 0
-    AUTO = 1
-    TEST_UI = 2
+def build_solver():
+    if is_pi():
+        from solve.tetra3 import Tetra3Solver
+        return Tetra3Solver()
+    else:
+        return FakeSolver()
 
-def main(operation_mode: OperationMode = OperationMode.AUTO):
+def test_ui(scope: Telescope, ui: UIManager):
+     #scope.set_position(279.6348, 8.0315)
+    scope.set_position(200.98785, 54.7958) # Mizar
+    scope.set_camera_offset(0.0, 0.0)
+    #scope.target_manager.set_target(CelestialObject("Alcor", 4.0, "Double", "", 201.31280, 54.9915, "", True))
+    #scope.set_position(0.0, 0.0)
+    ui.state = ScreenState.NAVIGATE #ui.selected = 27
+    #scope.target_manager.catalog = "messier"
+    #m45 = scope.target_manager.catalog_loader.search_objects(name="M45")
+    #target = scope.observe_local("jupiter")
+    #target = m45[0] if m45 else CelestialObject("M45", 0, "Pleiades", "", 56.64, 24.1167, "", False)
+    #scope.set_position(target.ra, target.dec)
+    #scope.target_manager.set_target(target)
+    
+    #scope.set_camera_offset(0.0, 0.0)
+    ui.render()
+    time.sleep(3)
+    img = ui.render()
+    img.show()
+
+def running(flo: Astroflo, ui: UIManager):
+    ui.state = ScreenState.NAVIGATE
+    #flo.drift()
+    time.sleep(0.1)
+
+
+def main():
     scope = Telescope(
         aperature=200,
         focal_length=1200,
@@ -55,57 +86,20 @@ def main(operation_mode: OperationMode = OperationMode.AUTO):
     ui_thread = threading.Thread(target=ui.loop, daemon=True)
     ui_thread.start()
 
-    solver = FakeSolver()
+    solver = build_solver()
     cam = build_camera()
 
     flo = Astroflo(cam, solver, scope)
     flo.start()
 
-    time.sleep(1)
-    match operation_mode:
-        case OperationMode.MANUAL:
-            pass
-        case OperationMode.AUTO:
-            ui.state = ScreenState.NAVIGATE
-            try:
-                while True:
-                    flo.drift()
-                    time.sleep(0.1)
-                    # Check subsystems and restart if necessary
-            except Exception as e:
-                print(e)
-                flo.stop()
-                ui_thread.join()
-        case OperationMode.TEST_UI:
-
-            #scope.set_position(279.6348, 8.0315)
-            scope.set_position(200.98785, 54.7958) # Mizar
-            scope.set_camera_offset(0.0, 0.0)
-            #scope.target_manager.set_target(CelestialObject("Alcor", 4.0, "Double", "", 201.31280, 54.9915, "", True))
-            #scope.set_position(0.0, 0.0)
-            ui.state = ScreenState.NAVIGATE #ui.selected = 27
-            #scope.target_manager.catalog = "messier"
-            #m45 = scope.target_manager.catalog_loader.search_objects(name="M45")
-            #target = scope.observe_local("jupiter")
-            #target = m45[0] if m45 else CelestialObject("M45", 0, "Pleiades", "", 56.64, 24.1167, "", False)
-            #scope.set_position(target.ra, target.dec)
-            #scope.target_manager.set_target(target)
-            
-            #scope.set_camera_offset(0.0, 0.0)
-            ui.render()
-            time.sleep(3)
-            img = ui.render()
-            img.show()
-
-    
+    if OperationManager.render_test:
+        test_ui(scope, ui)
+    else:
+        try:
+            running(flo, ui, ui_thread)
+        except KeyboardInterrupt:
+            flo.stop()
+            ui_thread.join()
     
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Astroflo Telescope Control")
-    parser.add_argument("--ui", action="store_true", help="Run in test mode manually rendering single UI frame")
-    parser.add_argument("--stel", action="store_true", help="Run Stellarium server")
-    args = parser.parse_args()
-
-    if args.ui:
-        main(OperationMode.TEST_UI)
-    else:
-        main(OperationMode.AUTO)
+    main()

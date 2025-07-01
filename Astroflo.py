@@ -1,5 +1,4 @@
 from typing import List, Optional
-from queue import Queue
 from threading import Thread, Lock
 from datetime import timedelta
 import time
@@ -13,6 +12,8 @@ from astronomy.stellarium import StellariumConnection
 from astropy.coordinates import SkyCoord, EarthLocation, AltAz
 from astropy.time import Time
 import astropy.units as u
+from astronomy.analyze import ImageAnalysis
+from operation import OperationManager
 
 class Astroflo:
     capturer: Camera = None
@@ -29,14 +30,13 @@ class Astroflo:
         self.latest = None
         self.latest_timestamp = None
         self.state_lock = Lock()
-        
-        self.stellarium = StellariumConnection(scope)
-
+    
         self.fails = 0
         self.running = False
 
         self.capture_thread = Thread(target=self._capture_loop, daemon=True)
-        
+        if OperationManager.perform_analysis:
+            self.analysis = ImageAnalysis()        
     
     def start(self):
         # Configure camera resasonably before start
@@ -50,16 +50,32 @@ class Astroflo:
         self.running = True
         self.capture_thread.start()
 
-        stel = False
-        if stel:
+        if OperationManager.stellarium_server:
+            self.stellarium = StellariumConnection(self.scope)
             self.stellarium.run_server()
 
-   
     def stop(self):
         self.running = False
         if self.capture_thread.is_alive():
             self.capture_thread.join(timeout=2.0)
     
+    def synchronous_loop(self):
+        self.running = True
+        while self.running:
+            img = self.capturer.capture()
+            if img is not None:
+                timestamp = datetime.now()
+                if OperationManager.perform_analysis:
+                    self.analysis.run()
+                result = self.solver.solve(img)
+                with self.state_lock:
+                    if result is not None:
+                        self.fails = 0
+                        if (not self.latest_timestamp or timestamp > self.latest_timestamp) and result[1] != 'Failed':
+                            self.set_latest(result, timestamp)
+                    else:
+                        pass # TODO: add fail manager? 
+
     def _capture_loop(self):
         while self.running:
             img = self.capturer.capture()

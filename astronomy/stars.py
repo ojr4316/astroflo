@@ -2,6 +2,7 @@ from astropy.io import ascii
 from astropy.table import Table
 import numpy as np
 import time
+import matplotlib
 import matplotlib.pyplot as plt
 import os
 from utils import plt_to_img
@@ -137,7 +138,7 @@ class Stars:
 
             ax.set_facecolor('black')
             plt.axis('off')
-            #plt.close(plt.figure)
+            matplotlib.pyplot.close()
             return plt_to_img(fig)
 
 

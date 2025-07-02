@@ -47,6 +47,7 @@ class ImageAnalysis:
         self.fwhm_values = self.fwhm_values[:max_idx]
 
     def add_image(self, image):
+        image = np.array(image)
         # Convert to grayscale if not already
         if len(image.shape) == 3:
             image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -142,7 +143,7 @@ class ImageAnalysis:
         return star_count
     
     def get_latest(self):
-        if not self.background_levels:
+        if not self.fwhm_values:
             return None
         
         latest_index = -1

@@ -4,7 +4,7 @@ import datetime
 import os
 import cv2
 from picamera2 import Picamera2
-
+from operation import OperationManager
 from PIL import Image
 
 low_res = (640, 480)
@@ -32,8 +32,10 @@ class RPiCamera(Camera):
         frame = self.picam2.capture_array()
         self.last_metadata = self.picam2.capture_metadata()            
 
-        return Image.open("./captures/20250526_225300.jpg")
-        self.save_frame(frame)
+        if not OperationManager.use_real_images:
+            return Image.open("./captures/20250526_225300.jpg")
+        if OperationManager.save_over:
+            self.save_frame(frame)
         return frame#self.save_frame(frame)
  
 

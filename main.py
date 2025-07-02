@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from skyfield.api import load
 
-from Astroflo import Astroflo
+from pipeline import Astroflo
 
 from capture.fake_camera import FakeCamera
 from solve.astrometry_handler import AstrometryNetSolver
@@ -26,6 +26,7 @@ from operation import OperationManager
 
 if os.name != 'nt':
     matplotlib.use("Agg")
+    # For Star Rendering
     # Windows really doesn't like Agg for multi-threading
     # Mac and Linux NEED Agg for multi-threading
 
@@ -69,12 +70,12 @@ def test_ui(scope: Telescope, ui: UIManager):
     img.show()
 
 def running(flo: Astroflo, ui: UIManager):
-    ui.state = ScreenState.NAVIGATE
+    #ui.state = ScreenState.NAVIGATE
     #flo.drift()
     time.sleep(0.1)
 
 
-def main():
+def main():    
     scope = Telescope(
         aperature=200,
         focal_length=1200,
@@ -82,21 +83,24 @@ def main():
         eyepiece_fov=40,
     )
 
-    ui = UIManager(scope)
-    ui_thread = threading.Thread(target=ui.loop, daemon=True)
-    ui_thread.start()
+    target = scope.target_manager.stars.search_by_name("altair")
+    scope.target_manager.set_target(target['RAdeg'], target['DEdeg'], target['Name'])
 
     solver = build_solver()
     cam = build_camera()
 
     flo = Astroflo(cam, solver, scope)
+    ui = UIManager(flo)
+    ui_thread = threading.Thread(target=ui.loop, daemon=True)
+    ui_thread.start()
     flo.start()
 
     if OperationManager.render_test:
         test_ui(scope, ui)
     else:
         try:
-            running(flo, ui, ui_thread)
+            while True:
+                running(flo, ui)
         except KeyboardInterrupt:
             flo.stop()
             ui_thread.join()

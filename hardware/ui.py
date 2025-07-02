@@ -4,10 +4,13 @@ import os
 import io
 from enum import Enum
 from PIL import Image
+import pytz
+import concurrent.futures
 
 from hardware.display import ScreenRenderer
 from hardware.input import Input
-from astronomy.Telescope import Telescope
+from hardware.screen import Screen
+from pipeline import Astroflo
 
 class ScreenState(Enum):
     MAIN_MENU = 0
@@ -21,8 +24,9 @@ class ScreenState(Enum):
     NAVIGATE = 10
 
 class UIManager:
-    def __init__(self, scope: Telescope):
-        self.scope = scope
+    def __init__(self, pipeline: Astroflo):
+        self.pipeline = pipeline
+        self.scope = pipeline.scope
         self.state = ScreenState.MAIN_MENU
         self.renderer = ScreenRenderer()
         self.input = Input()
@@ -34,18 +38,6 @@ class UIManager:
 
         self.setup_input()
 
-        self.field_render_executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
-        self.render_future = None
-        self.last_render = None
-
-        self.last_render_time = time.time()
-
-        self.field_render_executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
-        self.render_future = None
-        self.last_render = None
-
-        self.last_render_time = time.time()
-
     def setup_input(self):
         self.input.controls['R']["press"] = self.decrease
         self.input.controls['L']["press"] = self.increase
@@ -54,12 +46,19 @@ class UIManager:
         self.input.controls['D']["press"] = self.right
 
         self.input.controls['A']["press"] = self.select
+        self.input.controls['B']["press"] = self.debug
 
         self.input.controls['C']["press"] = self.alt_select
 
     def alt_select(self):
         if self.state == ScreenState.NAVIGATE:
             self.state = ScreenState.MAIN_MENU
+
+    def debug(self):
+        if self.state != ScreenState.DEBUG_SOFTWARE:
+            self.state = ScreenState.DEBUG_SOFTWARE
+        else:
+            self.state = ScreenState.NAVIGATE
 
     def select(self):
         match(self.state):
@@ -170,40 +169,9 @@ class UIManager:
             pos = self.scope.get_position()
             ra, dec = pos[0], pos[1]
             # Actual field rendering is costly, so separate thread
-            if self.render_future is None or self.render_future.done():
-                def run_and_store():
-                    try:
-                        stars = self.scope.target_manager.stars
-                        r = stars.radius_from_telescope(self.scope.focal_length, self.scope.eyepiece, self.scope.eyepiece_fov)
-                        print(f"Rendering field with radius {r:.2f} degrees at RA: {ra:.4f}, DEC: {dec:.4f}")
-                        nearby = stars.search_by_coordinate(ra=ra, dec=dec, radius=r)
-                        for star in nearby:
-                            print(star)
-                            print(f"Found star: {star['Name']} at RA: {star['RAdeg']:.4f}, DEC: {star['DEdeg']:.4f}")
-                        projected = stars.project_to_view(nearby, center_ra=ra, center_dec=dec, radius_deg=r, rotation=180)
-                        return stars.render_view(projected)
-                        return self.scope.target_manager.simple_nav(ra, dec)
-                        plot = enhance_telescope_field(self.scope)
-                        plt.close(plot.fig)
-                        buf = io.BytesIO()
-                        plot.export(buf, format='png')
-                        buf.seek(0)
-                        return Image.open(buf)
-                    except Exception as e:
-                        print(f"Nav Error: {e}")
-                        return None
+            image, main_target = self.scope.renderer.render()
 
-                def handle_result(fut):
-                    self.last_render_time = time.time()
-                    self.last_render = fut.result()
-
-                self.render_future = self.field_render_executor.submit(run_and_store)
-                self.render_future.add_done_callback(handle_result)
-
-            if self.last_render is not None:
-                image = self.last_render
-
-            return self.renderer.render_image_with_caption(image, f"RA:{ra:.4f}|DEC:{dec:.4f} ({(time.time()-self.last_render_time):.1f})", "target")
+            return self.renderer.render_image_with_caption(image, f"RA:{ra:.4f} | DEC:{dec:.4f}", main_target if len(main_target) > 0 else "")
         except Exception as e:
             print(f"Error rendering navigation: {e}")
             return self.renderer.render_image_with_caption(image, "Error rendering navigation")
@@ -212,29 +180,38 @@ class UIManager:
     def render_debug_software(self):
         # get time 
         time = self.scope.get_time()
-        location = self.scope.wgsLocation
+        location = self.scope.location
 
         local = pytz.timezone("America/New_York")
         local_time = time.astimezone(local)
         julian_date = time.tt
         utc = time.utc_strftime()
 
-        lst = (time.gast + location.longitude.degrees / 15.0) % 24.0
+        lst = (time.gast + location.lon.degree / 15.0) % 24.0
 
         position = self.scope.get_position()
 
+        pos_str = "Unsolved"
+        if position:
+            pos_str = f"RA:{position[0]:.4f} | DEC:{position[1]:.4f}"
+
         screen_text = [
+            pos_str,
             f"Local: {local_time.strftime('%Y-%m-%d %H:%M:%S')}",
             f"UTC: {utc}",
             f"Julian Date: {julian_date:.5f}",
             f"LST: {lst:.2f}h",
-            f"RA:{position[0]:.4f} | DEC:{position[1]:.4f}",
-            f"{location.latitude.degrees:.4f}°N, {location.longitude.degrees:.4f}°E ({location.elevation.m:.0f}m)",
+            
+            f"{location.lat.degree:.4f}°N, {location.lon.degree:.4f}°E",
             f"Viewing Angle: {self.scope.viewing_angle}°",
             f"Lens: {self.scope.eyepiece}mm ({self.scope.eyepiece_fov}° AFOV)",
-            f"Aperture: {self.scope.aperture}mm",
-            f"Focal Length: {self.scope.focal_length}mm",
+            f"APT: {self.scope.aperture}mm FL: {self.scope.focal_length}mm",
         ]
+
+        latest_analysis = self.pipeline.analysis.get_latest()
+        if latest_analysis is not None:
+            lines = str(latest_analysis).replace('"', '').replace("{", "").replace("}", '').split(",")
+            screen_text = lines + screen_text
  
         return self.renderer.render_many_text(screen_text)
 

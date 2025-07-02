@@ -34,27 +34,29 @@ class Tetra3Solver(Solver):
 
 
     def solve(self, image):
-        start = time.time()
-        image = np.array(image)
-        if image.ndim == 3:
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        try:
+            start = time.time()
+            image = np.array(image)
+            if image.ndim == 3:
+                image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            #processed = tetra3.crop_and_downsample_image(image, downsample=0, return_offsets=True)
+            #image, offsets = processed
+            
+            centroids = self.cedar_detect.extract_centroids(image, sigma=8, use_binned=True)
+            result = self.t3.solve_from_centroids(centroids, fov_estimate=self.fov, size=(image.shape[1], image.shape[0]))
 
-        #processed = tetra3.crop_and_downsample_image(image, downsample=0, return_offsets=True)
-        #image, offsets = processed
-        
-        centroids = self.cedar_detect.extract_centroids(image, sigma=8, use_binned=True)
-        result = self.t3.solve_from_centroids(centroids, fov_estimate=self.fov, size=(image.shape[1], image.shape[0]))
+            result = self.t3.solve_from_image(Image.fromarray(image), fov_estimate=self.fov, fov_max_error=1, pattern_checking_stars=20)
 
-        #result = self.t3.solve_from_image(Image.fromarray(image), fov_estimate=self.fov, fov_max_error=1, pattern_checking_stars=20)
-
-        ra = result['RA']
-        dec = result['Dec']
-        prob = result['Prob']
-        #print(result)
-        
-        if ra is not None:
-            coords = (ra, dec)
-            return (None, coords, prob)        
+            ra = result['RA']
+            dec = result['Dec']
+            prob = result['Prob']
+            #print(result)
+            
+            if ra is not None:
+                 coords = (ra, dec)
+                 return (None, coords, prob)   
+        except Exception as e:
+            print(e)     
 
         return None
     

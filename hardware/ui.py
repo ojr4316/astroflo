@@ -88,10 +88,9 @@ class UIManager:
 
     def decrease(self):
         if self.state == ScreenState.NAVIGATE:
-            self.scope.viewing_angle -= 1
-            if self.scope.viewing_angle < 0:
-                self.scope.viewing_angle = 359
-            print(self.scope.viewing_angle)
+            x, y = self.scope.camera_offset
+            self.scope.camera_offset = (x - 0.1, y)
+            print(f"decreaseing {self.scope.camera_offset}")
 
         else:
             if self.selected > 0:
@@ -101,10 +100,12 @@ class UIManager:
 
     def increase(self):
         if self.state == ScreenState.NAVIGATE:
-            self.scope.viewing_angle += 1
-            if self.scope.viewing_angle > 359:
-                self.scope.viewing_angle = 0
-            print(self.scope.viewing_angle)
+            #self.scope.viewing_angle += 1
+            #if self.scope.viewing_angle > 359:
+            #    self.scope.viewing_angle = 0
+            #print(self.scope.viewing_angle)
+            x, y = self.scope.camera_offset
+            self.scope.camera_offset = (x + 0.1, y)
         else:
             if self.selected < self.max_idx:
                 self.selected += 1
@@ -122,6 +123,9 @@ class UIManager:
                     case 1: x -= 0.1
                     case 2: y -= 0.1
                 self.scope.camera_offset = (x, y)
+        if self.state == ScreenState.NAVIGATE:
+            x, y = self.scope.camera_offset
+            self.scope.camera_offset = (x, y - 0.1)
 
     def right(self):
         if self.state == ScreenState.CONFIGURE_TELESCOPE:
@@ -134,6 +138,9 @@ class UIManager:
                     case 1: x += 0.1
                     case 2: y += 0.1
                 self.scope.camera_offset = (x, y)
+        if self.state == ScreenState.NAVIGATE:
+            x, y = self.scope.camera_offset
+            self.scope.camera_offset = (x, y + 0.1)
 
     def render_main_menu(self):
         title = "~ASTROFLO MENU~"
@@ -142,12 +149,12 @@ class UIManager:
         return self.renderer.render_menu(title, options, self.selected)
     
     def render_telescope_settings(self):
-        self.max_idx = len(self.scope.get_settings())
-        return self.renderer.render_settings(self.scope.get_settings(), self.selected)
+        self.max_idx = len(self.scope.settings.get_settings())
+        return self.renderer.render_settings(self.scope.settings.get_settings(), self.selected)
 
     def render_camera_settings(self):
-        self.max_idx = len(self.scope.get_cam_settings())
-        return self.renderer.render_settings(self.scope.get_cam_settings(), self.selected)
+        self.max_idx = len(self.scope.settings.get_cam_settings())
+        return self.renderer.render_settings(self.scope.settings.get_cam_settings(), self.selected)
 
     def render_target_lists(self):
         lists = self.scope.target_manager.catalog_loader.get_catalogs()

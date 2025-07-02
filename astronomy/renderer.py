@@ -46,6 +46,10 @@ class NavigationStarfield:
         # Convert RA/Dec to SkyCoord objects
         current_coord = SkyCoord(ra=current_ra, dec=current_dec, unit='deg', frame='gcrs')
         target_coord = SkyCoord(ra=target_ra, dec=target_dec, unit='deg', frame='gcrs')
+        
+        #print(f"XOFFSET:{current_ra-target_ra}")
+        #print(f"YOFFSET:{current_dec-target_dec}")
+
         #print(f"Current RA: {current_ra}, Dec: {current_dec}")
         #print(f"Target RA: {target_ra}, Dec: {target_dec}")
         # Calculate angular distance and position angle

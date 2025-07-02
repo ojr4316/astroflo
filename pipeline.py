@@ -40,7 +40,7 @@ class Astroflo:
     
     def start(self):
         # Configure camera resasonably before start
-        self.capturer.configure(500_000)
+        self.capturer.configure(1_000_000)
         self.capturer.start()
         
         # Configure Solver

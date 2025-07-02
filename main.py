@@ -83,9 +83,9 @@ def main():
         eyepiece_fov=40,
     )
 
-    target = scope.target_manager.stars.search_by_name("altair")
-    scope.target_manager.set_target(target['RAdeg'], target['DEdeg'], target['Name'])
-
+    target = scope.target_manager.stars.search_by_name("rotanev")
+    scope.target_manager.set_target(322.89393, -5.5705, "Sadalsuud")
+    print(target)
     solver = build_solver()
     cam = build_camera()
 

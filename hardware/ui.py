@@ -38,9 +38,18 @@ class UIManager:
 
         self.setup_input()
 
+        self.grow = 0
+        self.grow_max = 5
+
+    def reset_grow(self):
+        self.grow = 0
+
     def setup_input(self):
         self.input.controls['R']["press"] = self.decrease
         self.input.controls['L']["press"] = self.increase
+
+        self.input.controls['R']['release'] = self.reset_grow
+        self.input.controls['L']['release'] = self.reset_grow
 
         self.input.controls['U']["press"] = self.left
         self.input.controls['D']["press"] = self.right
@@ -91,7 +100,8 @@ class UIManager:
 
     def decrease(self):
         if self.state == ScreenState.NAVIGATE:
-            self.scope.viewing_angle -= 1
+            self.grow += 1
+            self.scope.viewing_angle -= self.grow
             if self.scope.viewing_angle < 0:
                 self.scope.viewing_angle = 359
         else:
@@ -102,7 +112,8 @@ class UIManager:
 
     def increase(self):
         if self.state == ScreenState.NAVIGATE:
-            self.scope.viewing_angle += 1
+            self.grow += 1
+            self.scope.viewing_angle += self.grow
             if self.scope.viewing_angle > 359:
                 self.scope.viewing_angle = 0
             #x, y = self.scope.camera_offset
@@ -183,7 +194,7 @@ class UIManager:
             # Actual field rendering is costly, so separate thread
             image, dist = self.scope.renderer.render()
 
-            return self.renderer.render_image_with_caption(image, f"RA:{ra:.4f} | DEC:{dec:.4f}", f"{self.scope.viewing_angle}°|{self.scope.zoom}X|{round(dist, 4)}")
+            return self.renderer.render_image_with_caption(image, f"RA:{ra:.4f} | DEC:{dec:.4f}", f"{self.scope.viewing_angle}°|{round(1/self.scope.zoom, 2)}X|{round(dist, 4)}")
         except Exception as e:
             print(f"Error rendering navigation: {e}")
             return self.renderer.render_image_with_caption(image, "Error rendering navigation")

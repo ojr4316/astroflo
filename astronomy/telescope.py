@@ -17,7 +17,7 @@ rochester = EarthLocation(
 
 
 class Telescope:
-    def __init__(self, aperature: int, focal_length: int, eyepiece: int, eyepiece_fov: int, zoom: int = 1):
+    def __init__(self, aperature: int, focal_length: int, eyepiece: int, eyepiece_fov: int, zoom: int = 2):
         self.aperture = aperature
         self.focal_length = focal_length
         self.eyepiece = eyepiece

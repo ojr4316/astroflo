@@ -7,6 +7,7 @@ from starplot.optics import Reflector, Optic
 from skyfield.api import wgs84, load
 from astronomy.settings import TelescopeSettings
 from astronomy.renderer import NavigationStarfield
+from operation import OperationManager
 
 rochesterLat = 43.1566
 rochesterLong = -77.6088
@@ -23,7 +24,8 @@ class Telescope:
         self.eyepiece_fov = eyepiece_fov
         self.zoom = zoom # barlow
 
-        self.position = None
+        self.mount_position = (0, 0) # RA/DEC camera position
+        self.position = None # RA/DEC offset by camera
         self.last_position = None
         self.camera_offset = (0, 0)
         self.viewing_angle = 0 # 0-359deg
@@ -68,18 +70,21 @@ class Telescope:
         self.settings.save()
 
     def get_position(self):
-        if self.position is None:
-            return None
-        return (self.position[0] + self.camera_offset[0], self.position[1] + self.camera_offset[1])
+        return self.position
         
-    def set_position(self, ra: float, dec: float):
+    def solve_result(self, ra: float, dec: float):
+        self.mount_position = (ra, dec)
+        ra += self.camera_offset[0]
+        dec += self.camera_offset[1]
+
         if self.last_position is not None:
             self.speed = ((ra - self.last_position[0]) ** 2 + (dec - self.last_position[1]) ** 2) ** 0.5
         if self.position is not None:
             self.last_position = self.position
+
         self.position = (ra, dec)
-        self.settings.save_coord()
- 
+        if OperationManager.log_coordinates:
+            self.settings.save_coord()
 
     def modify(self, idx, increase=False): # Telescope Settings Page, TODO: Maybe modify UI interally to adjust values
         match(idx):

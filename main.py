@@ -49,10 +49,10 @@ def build_solver():
     else:
         return FakeSolver()
 
-def test_ui(scope: Telescope, ui: UIManager):
-     #scope.set_position(279.6348, 8.0315)
-    scope.set_position(200.98785, 54.7958) # Mizar
-    scope.set_camera_offset(0.0, 0.0)
+def test_ui(flo: Astroflo, ui: UIManager):
+    
+    #scope.solve_result(200.98785, 54.7958) # Mizar
+   
     #scope.target_manager.set_target(CelestialObject("Alcor", 4.0, "Double", "", 201.31280, 54.9915, "", True))
     #scope.set_position(0.0, 0.0)
     ui.state = ScreenState.NAVIGATE #ui.selected = 27
@@ -60,14 +60,22 @@ def test_ui(scope: Telescope, ui: UIManager):
     #m45 = scope.target_manager.catalog_loader.search_objects(name="M45")
     #target = scope.observe_local("jupiter")
     #target = m45[0] if m45 else CelestialObject("M45", 0, "Pleiades", "", 56.64, 24.1167, "", False)
-    #scope.set_position(target.ra, target.dec)
     #scope.target_manager.set_target(target)
     
-    #scope.set_camera_offset(0.0, 0.0)
+
+    flo.scope.set_camera_offset(0.0, 0.0)
+
     ui.render()
-    time.sleep(3)
+    time.sleep(5)
     img = ui.render()
     img.show()
+
+    flo.offset_pos_to_brightest_nearby()
+    ui.render()
+    time.sleep(2)
+    img = ui.render()
+    img.show()
+    
 
 def running(flo: Astroflo, ui: UIManager):
     #ui.state = ScreenState.NAVIGATE
@@ -85,7 +93,7 @@ def main():
         eyepiece_fov=40,
     )
 
-    target = scope.target_manager.stars.search_by_name("rotanev")
+    target = scope.target_manager.stars.search_by_name("Sadalsuud")
     scope.target_manager.set_target(322.89393, -5.5705, "Sadalsuud")
     print(target)
     solver = build_solver()
@@ -98,7 +106,7 @@ def main():
     flo.start()
 
     if OperationManager.render_test:
-        test_ui(scope, ui)
+        test_ui(flo, ui)
     else:
         try:
             while True:

@@ -16,19 +16,16 @@ class NavigationStarfield:
         return nav, name
 
     def render_stars(self):
-        r = self.stars.radius_from_telescope(self.scope.focal_length, self.scope.eyepiece, self.scope.eyepiece_fov) * 4
+        r = self.stars.radius_from_telescope(self.scope.focal_length, self.scope.eyepiece, self.scope.eyepiece_fov) * 1
         ra, dec = self.scope.get_position()
         nearby = self.stars.search_by_coordinate(ra=ra, dec=dec, radius=r)
         
-        name = ""
+        brightest = None
         for star in nearby:
-            n = str(star['Name']).replace("--", "").strip()
-            if len(n) > 0:
-                name = n
-                break
-            #print(f"Found star: {star['Name']} at RA: {star['RAdeg']:.4f}, DEC: {star['DEdeg']:.4f}")
+            if brightest is None or star['Vmag'] < brightest['Vmag']:
+                brightest = star
         projected = self.stars.project_to_view(nearby, center_ra=ra, center_dec=dec, radius_deg=r, rotation=self.scope.viewing_angle)
-        return self.stars.render_view(projected), name
+        return self.stars.render_view(projected), str(brightest['Name']) if brightest else "--"
                         
     def simple_nav(self, image: Image, field_size: float = 0.8333):
         current_ra, current_dec = self.scope.get_position()

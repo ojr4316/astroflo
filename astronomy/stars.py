@@ -126,15 +126,18 @@ class Stars:
             ax.add_patch(circle)
 
             # Plot stars
+            labeled_positions = set()
             for obj in projected:
                 star = obj['star']
                 x, y = obj['x'], obj['y']
                 mag = star['Vmag']
                 size = max(1, 15 - mag)  # Bright stars are bigger
                 ax.plot(x, y, 'o', markersize=size, color='white')
-
-                if mag < 6:
-                    ax.text(x + 0.03, y, star['Name'], color='red', fontsize=12)
+                
+                label_pos = (round(x + 0.03, 2), round(y, 2))
+                if mag < 4 and label_pos not in labeled_positions:
+                    ax.text(*label_pos, star['Name'], color='red', fontsize=14, clip_on=True, fontweight='bold')
+                    labeled_positions.add(label_pos)
 
             ax.set_facecolor('black')
             plt.axis('off')

@@ -14,7 +14,7 @@ class OperationManager:
     log_coordinates: bool = True # save coordinates to file (includes camera offset!)
     use_real_solver: bool = False # use astrometric solver on images
 
-    render_test: bool = False # open preview of display
+    render_test: bool = True # open preview of display
 
     def __init__(self, real_images: bool = True, stellarium_server: bool = True):
         OperationManager.use_real_images = real_images

@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from skyfield.api import load
 
+from hardware import ui
 from pipeline import Astroflo
 
 from capture.fake_camera import FakeCamera
@@ -70,11 +71,17 @@ def test_ui(flo: Astroflo, ui: UIManager):
     img = ui.render()
     img.show()
 
-    flo.offset_pos_to_brightest_nearby()
-    ui.render()
-    time.sleep(2)
-    img = ui.render()
-    img.show()
+    while True:
+        ui.render()
+        time.sleep(3)
+        img = ui.render()
+        img.show()
+
+    #flo.offset_pos_to_brightest_nearby()
+    #ui.render()
+    #time.sleep(2)
+    #img = ui.render()
+    #img.show()
     
 
 def running(flo: Astroflo, ui: UIManager):
@@ -84,6 +91,25 @@ def running(flo: Astroflo, ui: UIManager):
         flo.scope.sky_drift(drift_render_interval)
         time.sleep(drift_render_interval)
 
+# TODO: check target overlay rendering logic for correct direction, WITH camera offset!!!
+
+def try_set_target(scope: Telescope, name: str):
+    target = scope.target_manager.stars.search_by_name(name)
+    if len(target) > 0:
+        target = target[0]
+        scope.target_manager.set_target(target['RAdeg'], target['DEdeg'], target['Name'])
+        print(f"Target set to {target['Name']} at RA: {target['RAdeg']}, DEC: {target['DEdeg']}")
+    else:
+        print(f"Target '{name}' not found in catalog.")
+
+def try_set_planet(scope: Telescope, name: str):
+    planet = scope.target_manager.planets.get_current_position(name)
+    if planet is not None:
+        scope.target_manager.set_target(planet['RAdeg'], planet['DEdeg'], planet['Name'])
+        print(f"Target set to {planet['Name']} at RA: {planet['RAdeg']}, DEC: {planet['DEdeg']}")
+    else:
+        print(f"Planet '{name}' not found in catalog.")
+
 def main():    
     scope = Telescope(
         aperature=200,
@@ -92,9 +118,8 @@ def main():
         eyepiece_fov=40,
     )
 
-    target = scope.target_manager.stars.search_by_name("Sadalsuud")
-    scope.target_manager.set_target(322.89393, -5.5705, "Sadalsuud")
-    print(target)
+    try_set_planet(scope, "Neptune")
+
     solver = build_solver()
     cam = build_camera()
 

@@ -35,7 +35,7 @@ class Telescope:
 
         self.location = rochester
 
-        self.target_manager = TargetManager(rochester, self.camera_offset)
+        self.target_manager = TargetManager(rochester)
         self.renderer = NavigationStarfield(self)
         self.speed = 0
         

@@ -16,7 +16,12 @@ def clean(n) -> str:
     return n.lower()
 
 class Stars:
-    def __init__(self):
+    def __init__(self, ephemeris):
+        self.ephemeris = ephemeris
+        self.planet_cache = {}
+        self.cache_time = None
+        self.cache_duration = 5  # 5 seconds
+        self._render_lock = threading.Lock()
         # Assume prebuilt Tycho catalog is available with names
         start = time.time()
         print("Loading Tycho catalog...", end=' ')
@@ -53,11 +58,30 @@ class Stars:
 
         # Filter results within the specified radius
         within_radius = distance_rad <= radius_rad
-
-        results = self.tycho[within_radius]
-        #matching_distances = distance_rad[within_radius]
-
-        return results
+        star_results = self.tycho[within_radius]
+        
+        # Get planets in FOV
+        planets_in_fov = self.get_planets_in_fov(ra, dec, radius)
+        
+        if planets_in_fov:
+            combined_results = []
+            
+            for star in star_results:
+                combined_results.append({
+                    'Name': star['Name'],
+                    'RAdeg': star['RAdeg'],
+                    'DEdeg': star['DEdeg'],
+                    'Vmag': star['Vmag'],
+                    'is_planet': False
+                })
+            
+            for planet in planets_in_fov:
+                combined_results.append(planet)
+            
+            return combined_results
+        else:
+            return [{'Name': star['Name'], 'RAdeg': star['RAdeg'], 'DEdeg': star['DEdeg'], 
+                    'Vmag': star['Vmag'], 'is_planet': False} for star in star_results]
     
     # will probably combine/add to telescope
     def radius_from_telescope(self, focal_length: float, eyepiece: float, eyepiece_afov: float):
@@ -73,50 +97,47 @@ class Stars:
         y_rot = x * sin_a + y * cos_a
         return x_rot, y_rot
 
-    def project_to_view(self, stars, center_ra, center_dec, radius_deg, rotation: float = 0):
+    def project_to_view(self, objects, center_ra, center_dec, radius_deg, rotation: float = 0):
+        """Project both stars and planets to view coordinates"""
         ra0 = np.radians(center_ra)
         dec0 = np.radians(center_dec)
 
-        ra = np.radians(stars['RAdeg'])
-        dec = np.radians(stars['DEdeg'])
-
-        delta_ra = (ra - ra0 + np.pi) % (2 * np.pi) - np.pi
-
-        # Compute cos_c denominator
-        cos_c = np.sin(dec0) * np.sin(dec) + np.cos(dec0) * np.cos(dec) * np.cos(delta_ra)
-
-        # Avoid division by zero
-        cos_c = np.clip(cos_c, 1e-12, None)
-        x = np.cos(dec) * np.sin(delta_ra) / cos_c
-        y = (np.cos(dec0) * np.sin(dec) - np.sin(dec0) * np.cos(dec) * np.cos(delta_ra)) / cos_c
-
-        x = -x
-        x, y = self.rotate(x, y, rotation)  
-        
-        # Convert angular FOV radius to radians and normalize
-        radius_rad = np.radians(radius_deg)
-        x_norm = x / radius_rad
-        y_norm = y / radius_rad
-        r_deg = np.degrees(np.sqrt(x**2 + y**2))
-
         results = []
-        for i in range(len(stars)):
+        
+        for obj in objects:
+            ra = np.radians(obj['RAdeg'])
+            dec = np.radians(obj['DEdeg'])
+            
+            delta_ra = (ra - ra0 + np.pi) % (2 * np.pi) - np.pi
+            
+            cos_c = np.sin(dec0) * np.sin(dec) + np.cos(dec0) * np.cos(dec) * np.cos(delta_ra)
+            cos_c = np.clip(cos_c, 1e-12, None)
+            
+            x = np.cos(dec) * np.sin(delta_ra) / cos_c
+            y = (np.cos(dec0) * np.sin(dec) - np.sin(dec0) * np.cos(dec) * np.cos(delta_ra)) / cos_c
+            
+            x = -x
+            x, y = self.rotate(x, y, rotation)
+            
+            radius_rad = np.radians(radius_deg)
+            x_norm = x / radius_rad
+            y_norm = y / radius_rad
+            r_deg = np.degrees(np.sqrt(x**2 + y**2))
+            
             results.append({
-                'star': stars[i],
-                'x': x_norm[i],
-                'y': y_norm[i],
-                'r': r_deg[i]
+                'object': obj,
+                'x': x_norm,
+                'y': y_norm,
+                'r': r_deg
             })
 
         return results
-
-    _render_lock = threading.Lock()
 
     def render_view(self, projected):
         with self._render_lock:
             fig, ax = plt.subplots()
             fig.set_facecolor('black')
-            fig.set_dpi(50) # 184
+            fig.set_dpi(50)
             ax.set_aspect('equal')
             ax.set_xlim(-1, 1)
             ax.set_ylim(-1, 1)
@@ -125,25 +146,76 @@ class Stars:
             circle = plt.Circle((0, 0), 1, color='red', fill=False)
             ax.add_patch(circle)
 
-            # Plot stars
+            # Plot objects
             labeled_positions = set()
-            for obj in projected:
-                star = obj['star']
-                x, y = obj['x'], obj['y']
-                mag = star['Vmag']
-                size = max(1, 15 - mag)  # Bright stars are bigger
-                ax.plot(x, y, 'o', markersize=size, color='white')
+            for item in projected:
+                obj = item['object']
+                x, y = item['x'], item['y']
+                mag = obj['Vmag']
+                is_planet = obj.get('is_planet', False)
                 
-                label_pos = (round(x + 0.03, 2), round(y, 2))
-                if mag < 4 and label_pos not in labeled_positions:
-                    ax.text(*label_pos, star['Name'], color='red', fontsize=14, clip_on=True, fontweight='bold')
-                    labeled_positions.add(label_pos)
+                if is_planet:
+                    # Render planets differently
+                    size = max(8, 20 - mag)  # Planets are generally larger
+                    color = 'yellow' if obj['Name'] == 'SUN' else 'cyan'
+                    marker = 'o' if obj['Name'] != 'SUN' else '*'
+                    ax.plot(x, y, marker, markersize=size, color=color, markeredgecolor='white', markeredgewidth=2)
+                    
+                    # Always label planets
+                    label_pos = (round(x + 0.03, 2), round(y, 2))
+                    if label_pos not in labeled_positions:
+                        ax.text(*label_pos, obj['Name'], color='red', fontsize=12, clip_on=True, fontweight='bold')
+                        labeled_positions.add(label_pos)
+                else:
+                    # Render stars normally
+                    size = max(1, 15 - mag)
+                    ax.plot(x, y, 'o', markersize=size, color='white')
+                    
+                    # Label bright stars
+                    label_pos = (round(x + 0.03, 2), round(y, 2))
+                    if mag < 4 and label_pos not in labeled_positions:
+                        ax.text(*label_pos, obj['Name'], color='red', fontsize=14, clip_on=True, fontweight='bold')
+                        labeled_positions.add(label_pos)
 
             ax.set_facecolor('black')
             plt.axis('off')
             matplotlib.pyplot.close()
             return plt_to_img(fig)
+        
 
+    def get_planets_in_fov(self, ra, dec, radius):
+        current_time = time.time()
+        
+        # Check if we need to refresh planet cache
+        if (self.cache_time is None or 
+            current_time - self.cache_time > self.cache_duration or
+            not self.planet_cache):
+            
+            if self.ephemeris:
+                self.planet_cache = self.ephemeris.get_current_positions()
+                self.cache_time = current_time
+            else:
+                self.planet_cache = {}
+        
+        # Filter planets within FOV
+        planets_in_fov = []
+        for planet_name, planet_data in self.planet_cache.items():
+            if self.is_within_radius(ra, dec, planet_data['RAdeg'], planet_data['DEdeg'], radius):
+                planets_in_fov.append(planet_data)
+        
+        return planets_in_fov
+    
+    def is_within_radius(self, center_ra, center_dec, target_ra, target_dec, radius): # distance with haversine formula
+        radius_rad = np.radians(radius)
+        delta_ra = np.radians(target_ra - center_ra)
+        delta_dec = np.radians(target_dec - center_dec)
+        
+        a = (np.sin(delta_dec / 2) ** 2 +
+             np.cos(np.radians(center_dec)) * np.cos(np.radians(target_dec)) *
+             np.sin(delta_ra / 2) ** 2)
+        distance_rad = 2 * np.arcsin(np.sqrt(a))
+        
+        return distance_rad <= radius_rad
 
 
 #stars = Stars()

@@ -91,10 +91,9 @@ class UIManager:
 
     def decrease(self):
         if self.state == ScreenState.NAVIGATE:
-            x, y = self.scope.camera_offset
-            self.scope.camera_offset = (x - 0.1, y)
-            print(f"decreaseing {self.scope.camera_offset}")
-
+            self.scope.viewing_angle -= 1
+            if self.scope.viewing_angle < 0:
+                self.scope.viewing_angle = 359
         else:
             if self.selected > 0:
                 self.selected -= 1
@@ -103,12 +102,11 @@ class UIManager:
 
     def increase(self):
         if self.state == ScreenState.NAVIGATE:
-            #self.scope.viewing_angle += 1
-            #if self.scope.viewing_angle > 359:
-            #    self.scope.viewing_angle = 0
-            #print(self.scope.viewing_angle)
-            x, y = self.scope.camera_offset
-            self.scope.camera_offset = (x + 0.1, y)
+            self.scope.viewing_angle += 1
+            if self.scope.viewing_angle > 359:
+                self.scope.viewing_angle = 0
+            #x, y = self.scope.camera_offset
+            #self.scope.camera_offset = (x + 0.1, y)
         else:
             if self.selected < self.max_idx:
                 self.selected += 1
@@ -127,8 +125,10 @@ class UIManager:
                     case 2: y -= 0.1
                 self.scope.camera_offset = (x, y)
         if self.state == ScreenState.NAVIGATE:
-            x, y = self.scope.camera_offset
-            self.scope.camera_offset = (x, y - 0.1)
+            if self.scope.zoom > 1:
+                self.scope.zoom -= 0.5
+            else:
+                self.scope.zoom = 1
 
     def right(self):
         if self.state == ScreenState.CONFIGURE_TELESCOPE:
@@ -142,8 +142,10 @@ class UIManager:
                     case 2: y += 0.1
                 self.scope.camera_offset = (x, y)
         if self.state == ScreenState.NAVIGATE:
-            x, y = self.scope.camera_offset
-            self.scope.camera_offset = (x, y + 0.1)
+            if self.scope.zoom < 5:
+                self.scope.zoom += 0.5
+            else:
+                self.scope.zoom = 5
 
     def render_main_menu(self):
         title = "~ASTROFLO MENU~"
@@ -179,9 +181,9 @@ class UIManager:
             pos = self.scope.get_position()
             ra, dec = pos[0], pos[1]
             # Actual field rendering is costly, so separate thread
-            image, main_target = self.scope.renderer.render()
+            image, dist = self.scope.renderer.render()
 
-            return self.renderer.render_image_with_caption(image, f"RA:{ra:.4f} | DEC:{dec:.4f}", main_target if len(main_target) > 0 else "")
+            return self.renderer.render_image_with_caption(image, f"RA:{ra:.4f} | DEC:{dec:.4f}", f"{self.scope.viewing_angle}°|{self.scope.zoom}X|{round(dist, 4)}")
         except Exception as e:
             print(f"Error rendering navigation: {e}")
             return self.renderer.render_image_with_caption(image, "Error rendering navigation")

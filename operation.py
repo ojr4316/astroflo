@@ -10,6 +10,7 @@ class OperationManager:
     stellarium_server: bool = True # Telescope Control Stellarium Plugin
     perform_analysis: bool = True # add each image to a stat analyzer
     save_over: bool = True # continuously save images over existing file (for preview)
+    drift: bool = True # drift render of sky at expected rate
 
     render_test: bool = False # open preview of display
 

@@ -56,7 +56,8 @@ class UIManager:
 
     def debug(self):
         if self.state != ScreenState.DEBUG_SOFTWARE:
-            self.state = ScreenState.DEBUG_SOFTWARE
+            self.pipeline.offset_pos_to_brightest_nearby()
+            print("EEE")
         else:
             self.state = ScreenState.NAVIGATE
 

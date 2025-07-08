@@ -16,7 +16,7 @@ class NavigationStarfield:
         return nav, name
 
     def render_stars(self):
-        r = self.stars.radius_from_telescope(self.scope.focal_length, self.scope.eyepiece, self.scope.eyepiece_fov)
+        r = self.stars.radius_from_telescope(self.scope.focal_length, self.scope.eyepiece, self.scope.eyepiece_fov) * 4
         ra, dec = self.scope.get_position()
         nearby = self.stars.search_by_coordinate(ra=ra, dec=dec, radius=r)
         

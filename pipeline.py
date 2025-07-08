@@ -87,3 +87,26 @@ class Astroflo:
         self.scope.set_position(ra, dec)
         print(f"found new position: {ra}, {dec} at {timestamp}")
         self.stellarium.new_position()
+
+    def offset_pos_to_brightest_nearby(self):
+        scope = self.scope
+        ra, dec = scope.position # raw position, old offset cant bias
+        stars = scope.target_manager.stars
+        r = stars.radius_from_telescope(self.scope.focal_length, self.scope.eyepiece, self.scope.eyepiece_fov) * 4
+        nearby = self.stars.search_by_coordinate(ra=ra, dec=dec, radius=r)
+        
+        if len(nearby) == 0:
+            print("FAIL")
+            return
+        else:
+            brightest = nearby[0]
+            for s in nearby:
+                if s['Vmag'] < brightest: # TODO: fix for negative amgs
+                    brightest = s
+            tra, tdec = brightest['RAdeg'], brightest['DEdeg']
+
+            scope.set_camera_offset(ra-tra, dec-tdec)
+            print(self.scope.camera_offset)
+
+
+

@@ -33,7 +33,7 @@ class Telescope:
 
         self.location = rochester
 
-        self.target_manager = TargetManager(rochester)
+        self.target_manager = TargetManager(rochester, self.camera_offset)
         self.renderer = NavigationStarfield(self)
         self.speed = 0
         
@@ -88,3 +88,12 @@ class Telescope:
             case 2: self.eyepiece += (1 if increase else -1)
             case 3: self.eyepiece_fov += (1 if increase else -1)
         self.settings.save()
+
+    def sky_drift(self, t=1):
+        if self.position == None:
+            return
+        ra, dec = self.position # edit raw position without cam offset
+        ra_offset = (15 * np.cos(dec)) * t / 240 # Sky Drift, scaled by time, to hours
+        new_ra = ra + ra_offset
+        self.position = (new_ra, dec)
+        

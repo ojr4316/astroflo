@@ -71,8 +71,10 @@ def test_ui(scope: Telescope, ui: UIManager):
 
 def running(flo: Astroflo, ui: UIManager):
     #ui.state = ScreenState.NAVIGATE
-    #flo.drift()
-    time.sleep(0.1)
+    if OperationManager.drift:
+        drift_render_interval = 0.5
+        flo.scope.sky_drift(drift_render_interval)
+        time.sleep(drift_render_interval)
 
 
 def main():    

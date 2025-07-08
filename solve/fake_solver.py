@@ -13,4 +13,4 @@ class FakeSolver(Solver):
     
     def solve(self, image):
         time.sleep(2)
-        return ((image, polaris_wrong, 100))
+        return ((image, vega, 100))

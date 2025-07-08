@@ -52,7 +52,7 @@ class NavigationStarfield:
         # Calculate angular distance and position angle
         distance = current_coord.separation(target_coord).deg
         angle = current_coord.position_angle(target_coord).deg  # angle from current to target, counterclockwise from N
-        print(f"Distance: {distance}")
+        #print(f"Distance: {distance}")
         center_x, center_y = image_size // 2, image_size // 2
 
         if distance <= field_size/2:

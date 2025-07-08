@@ -24,7 +24,7 @@ class Telescope:
         self.eyepiece_fov = eyepiece_fov
         self.zoom = zoom # barlow
 
-        self.mount_position = (0, 0) # RA/DEC camera position
+        self.mount_position = None # RA/DEC camera position
         self.position = None # RA/DEC offset by camera
         self.last_position = None
         self.camera_offset = (0, 0)

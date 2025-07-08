@@ -12,6 +12,7 @@ class OperationManager:
     save_over: bool = True # continuously save images over existing file (for preview)
     drift: bool = True # drift render of sky at expected rate
     log_coordinates: bool = True # save coordinates to file (includes camera offset!)
+    use_real_solver: bool = False # use astrometric solver on images
 
     render_test: bool = False # open preview of display
 

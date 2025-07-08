@@ -56,8 +56,7 @@ class UIManager:
 
     def debug(self):
         if self.state != ScreenState.DEBUG_SOFTWARE:
-            self.pipeline.offset_pos_to_brightest_nearby()
-            print("EEE")
+            self.state = ScreenState.DEBUG_SOFTWARE
         else:
             self.state = ScreenState.NAVIGATE
 
@@ -85,6 +84,9 @@ class UIManager:
                 match self.selected:
                     case 0: self.state = ScreenState.MAIN_MENU
                     case 1: self.state = ScreenState.TARGET_SELECT
+            
+            case ScreenState.NAVIGATE:
+                self.pipeline.offset_pos_to_brightest_nearby()
 
 
     def decrease(self):

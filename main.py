@@ -43,7 +43,7 @@ def build_camera():
     return cam
 
 def build_solver():
-    if is_pi():
+    if is_pi() and OperationManager.use_real_solver:
         from solve.tetra3 import Tetra3Solver
         return Tetra3Solver()
     else:
@@ -83,7 +83,6 @@ def running(flo: Astroflo, ui: UIManager):
         drift_render_interval = 0.5
         flo.scope.sky_drift(drift_render_interval)
         time.sleep(drift_render_interval)
-
 
 def main():    
     scope = Telescope(

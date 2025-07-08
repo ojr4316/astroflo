@@ -100,10 +100,7 @@ class UIManager:
 
     def decrease(self):
         if self.state == ScreenState.NAVIGATE:
-            self.grow += 1
-            self.scope.viewing_angle -= self.grow
-            if self.scope.viewing_angle < 0:
-                self.scope.viewing_angle = 359
+            self.grow = -1
         else:
             if self.selected > 0:
                 self.selected -= 1
@@ -112,10 +109,7 @@ class UIManager:
 
     def increase(self):
         if self.state == ScreenState.NAVIGATE:
-            self.grow += 1
-            self.scope.viewing_angle += self.grow
-            if self.scope.viewing_angle > 359:
-                self.scope.viewing_angle = 0
+            self.grow = 1
             #x, y = self.scope.camera_offset
             #self.scope.camera_offset = (x + 0.1, y)
         else:
@@ -260,4 +254,11 @@ class UIManager:
         while True:
             self.screen.draw_screen(self.render())
             self.screen.handle_input(self.input)
+
+            self.scope.viewing_angle += self.grow
+            if self.scope.viewing_angle > 359:
+                self.scope.viewing_angle = 0
+            elif self.scope.viewing_angle < 0:
+                self.scope.viewing_angle = 359
+
             time.sleep(0.01)

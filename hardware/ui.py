@@ -130,10 +130,11 @@ class UIManager:
                     case 2: y -= 0.1
                 self.scope.camera_offset = (x, y)
         if self.state == ScreenState.NAVIGATE:
-            if self.scope.zoom > 1:
-                self.scope.zoom -= 0.5
+            if self.scope.zoom < 5:
+                self.scope.zoom += 0.5
             else:
-                self.scope.zoom = 1
+                self.scope.zoom = 5
+            
 
     def right(self):
         if self.state == ScreenState.CONFIGURE_TELESCOPE:
@@ -147,10 +148,11 @@ class UIManager:
                     case 2: y += 0.1
                 self.scope.camera_offset = (x, y)
         if self.state == ScreenState.NAVIGATE:
-            if self.scope.zoom < 5:
-                self.scope.zoom += 0.5
+            if self.scope.zoom > 0.5:
+                self.scope.zoom -= 0.5
             else:
-                self.scope.zoom = 5
+                self.scope.zoom = 0.5
+            
 
     def render_main_menu(self):
         title = "~ASTROFLO MENU~"

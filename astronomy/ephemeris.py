@@ -4,10 +4,13 @@ import time
 import matplotlib
 import matplotlib.pyplot as plt
 import os
-from utils import plt_to_img
+from utils import is_pi
 import threading
 from skyfield.api import wgs84, load
 from PIL import Image, ImageDraw
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+ephemeris_file = os.path.join(BASE_DIR, "..", "de440s.bsp")
 
 def clean(n) -> str:
     if n is np.ma.masked:
@@ -17,13 +20,14 @@ def clean(n) -> str:
     return n.lower()
 
 class Ephemeris:
-    def __init__(self, lat, lon, elevation, ephemeris_file='de440s.bsp'): #"/home/owen/astroflo/de440s.bsp"
+    def __init__(self, lat, lon, elevation): #
         self.location = wgs84.latlon(lat, lon, elevation)
+        self.ephemeris_file = ephemeris_file
         self.planets = load(ephemeris_file)
         self.earth = self.planets["EARTH"]
         self.timescale = load.timescale()
         self.names = ["MERCURY", "VENUS", "MARS", "JUPITER", "SATURN", "URANUS", "NEPTUNE", "PLUTO", "SUN", "MOON"]
-        self.time = self.timescale.utc(2025, 7, 9, 5, 0, 0)
+        self.time = None#self.timescale.utc(2025, 7, 9, 5, 0, 0)
         
     def get_planet(self, planet_name: str):
         planet_name = planet_name.upper()

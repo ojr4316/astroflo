@@ -91,8 +91,6 @@ def running(flo: Astroflo, ui: UIManager):
         flo.scope.sky_drift(drift_render_interval)
         time.sleep(drift_render_interval)
 
-# TODO: check target overlay rendering logic for correct direction, WITH camera offset!!!
-
 def try_set_target(scope: Telescope, name: str):
     target = scope.target_manager.stars.search_by_name(name)
     if len(target) > 0:
@@ -118,8 +116,8 @@ def main():
         eyepiece_fov=40,
     )
 
-    try_set_planet(scope, "Neptune")
-
+    #try_set_planet(scope, "Neptune")
+    try_set_target(scope, "Mizar")
     solver = build_solver()
     cam = build_camera()
 

@@ -6,7 +6,6 @@ from enum import Enum
 from PIL import Image
 import pytz
 import concurrent.futures
-
 from hardware.display import ScreenRenderer
 from hardware.input import Input
 from hardware.screen import Screen
@@ -64,10 +63,16 @@ class UIManager:
             self.state = ScreenState.MAIN_MENU
 
     def debug(self):
-        if self.state != ScreenState.DEBUG_SOFTWARE:
-            self.state = ScreenState.DEBUG_SOFTWARE
-        else:
-            self.state = ScreenState.NAVIGATE
+        match(self.state):
+            case ScreenState.MAIN_MENU | ScreenState.NAVIGATE:
+                self.pipeline.stop_configuring()
+                self.state = ScreenState.DEBUG_SOFTWARE
+            case ScreenState.DEBUG_SOFTWARE:
+                self.pipeline.configuring = True
+                self.state = ScreenState.DEBUG_HARDWARE
+            case ScreenState.DEBUG_HARDWARE:
+                self.pipeline.stop_configuring()
+                self.state = ScreenState.NAVIGATE
 
     def select(self):
         match(self.state):
@@ -187,10 +192,8 @@ class UIManager:
         try:
             pos = self.scope.get_position()
             ra, dec = pos[0], pos[1]
-            # Actual field rendering is costly, so separate thread
             image, dist = self.scope.renderer.render()
-
-            return self.renderer.render_image_with_caption(image, f"RA:{ra:.4f} | DEC:{dec:.4f}", f"{self.scope.viewing_angle}°|{round(1/self.scope.zoom, 2)}X|{round(dist, 4)}")
+            return self.renderer.render_image_with_caption(image, f"RA:{ra:.4f}|DEC:{dec:.4f} ({(time.time()-self.pipeline.latest_timestamp):.1f}s)", f"{self.scope.viewing_angle}°|{round(1/self.scope.zoom, 2)}X|{round(dist, 4):.4e}")
         except Exception as e:
             print(f"Error rendering navigation: {e}")
             return self.renderer.render_image_with_caption(image, "Error rendering navigation")
@@ -234,12 +237,20 @@ class UIManager:
  
         return self.renderer.render_many_text(screen_text)
 
+    def render_debug_hardware(self):
+        if not self.pipeline.configuring:
+            self.pipeline.configuring = True
+        if self.pipeline.latest_image is None:
+            return self.renderer.render_many_text(["Waiting for first image..."])
+        fwhm = self.pipeline.analysis.fwhm_values[-1]
+        min_fwhm = min(self.pipeline.analysis.fwhm_values) if self.pipeline.analysis.fwhm_values else 0.0
 
-
-
+        return self.renderer.render_image_with_caption(
+            self.pipeline.latest_image if self.pipeline.latest_image is not None else Image.new("RGB", (240, 240)),
+            f"FWHM: {fwhm:.2f}", f"Min FWHM found: {min_fwhm:.2f}"
+        )
 
     def render(self):
-
         match(self.state):
             case ScreenState.MAIN_MENU: return self.render_main_menu()
             case ScreenState.CONFIGURE_TELESCOPE: return self.render_telescope_settings()
@@ -248,7 +259,7 @@ class UIManager:
             case ScreenState.TARGET_SELECT: return self.render_target_select()
             case ScreenState.DEBUG_SOFTWARE: return self.render_debug_software()
             case ScreenState.NAVIGATE: return self.render_navigation()
-            #case ScreenState.TARGET_LIST: return self.
+            case ScreenState.DEBUG_HARDWARE: return self.render_debug_hardware()
 
     def loop(self):
         if os.name == 'nt' or os.uname().nodename != "rpi":

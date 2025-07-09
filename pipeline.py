@@ -3,7 +3,6 @@ from threading import Thread, Lock
 from datetime import timedelta
 import time
 import os
-from datetime import datetime
 from capture.camera import Camera
 from solve.solver import Solver
 from clean.image_processor import ImageProcessor
@@ -14,6 +13,7 @@ from astropy.time import Time
 import astropy.units as u
 from astronomy.analyze import ImageAnalysis
 from operation import OperationManager
+from PIL import Image
 
 class Astroflo:
     capturer: Camera = None
@@ -34,13 +34,19 @@ class Astroflo:
         self.fails = 0
         self.running = False
 
-        self._pipeline = Thread(target=self.pipeline, daemon=True)
+        self.configuring = False
+        self.latest_image = None   
+
         if OperationManager.perform_analysis:
-            self.analysis = ImageAnalysis()        
+            self.analysis = ImageAnalysis()  
+
+        self._pipeline = Thread(target=self.pipeline, daemon=True)
+
+           
     
     def start(self):
         # Configure camera resasonably before start
-        self.capturer.configure(1_000_000)
+        self.capturer.configure(2_000_000)
         self.capturer.start()
         
         # Configure Solver
@@ -64,9 +70,23 @@ class Astroflo:
         while self.running:
             img = self.capturer.capture()
             if img is not None:
-                timestamp = datetime.now()
+                timestamp = time.time()
                 if OperationManager.perform_analysis:
                     self.analysis.add_image(img)
+                if self.configuring:
+                    loc = self.analysis.find_brightest(img)
+                    if loc is not None:
+                        y, x, _ = loc[0]  # Just location, ignore channel
+                        half_size = 40
+                        box = (
+                            max(x - half_size, 0),
+                            max(y - half_size, 0),
+                            min(x + half_size, img.shape[1]),
+                            min(y + half_size, img.shape[0])
+                        )
+                        cropped = Image.fromarray(img).crop(box)
+                        self.latest_image = cropped.resize((240, 240), resample=Image.BILINEAR)
+                        continue
                 result = self.solver.solve(img)
                 with self.state_lock:
                     if result is not None:
@@ -96,26 +116,29 @@ class Astroflo:
         ra, dec = scope.mount_position 
 
         stars = scope.target_manager.stars
-        r = stars.radius_from_telescope(self.scope.focal_length, self.scope.eyepiece, self.scope.eyepiece_fov) * 5
+        r = stars.radius_from_telescope(self.scope.focal_length, self.scope.eyepiece, self.scope.eyepiece_fov) * 10
         nearby = stars.search_by_coordinate(ra=ra, dec=dec, radius=r)
-        for s in nearby: 
-            print(s)
+        #for s in nearby: 
+        #   print(s)
         if len(nearby) == 0:
             print("FAIL")
             return
         else:
             brightest = nearby[0]
-            print(brightest)
+            #print(brightest)
             for s in nearby:
                 if s['Vmag'] < brightest['Vmag']: # TODO: fix for negative amgs
                     brightest = s
             tra, tdec = brightest['RAdeg'], brightest['DEdeg']
             x_offset = tra - ra
             y_offset = tdec - dec
-            print(f"Offsetting position to brightest nearby star: {brightest['Name']} at RA: {tra}, DEC: {tdec}")
+            print(f"Offsetting position to brightest nearby: {brightest['Name']} at RA: {tra}, DEC: {tdec}")
             print(f"Current position: RA: {ra}, DEC: {dec}")
             scope.set_camera_offset(x_offset, y_offset)
             print(scope.camera_offset)
-
+        
+    def stop_configuring(self):
+        self.configuring = False
+        self.latest_image = None
 
 

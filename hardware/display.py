@@ -25,7 +25,7 @@ class ScreenRenderer:
         img.paste(image, (0, 0))
 
         draw.text((1, 0), top_caption, font=self.font, fill=self.COLOR_GRAY)
-        draw.text((1, self.HEIGHT - 20), "No Target" if len(bot_caption) == 0  else bot_caption, font=self.font, fill=self.COLOR_GRAY)
+        draw.text((1, self.HEIGHT - 20), bot_caption, font=self.font, fill=self.COLOR_GRAY)
         return self._transform(img)
 
     def render_menu(self, question: str, buttons: list, selected_idx: int, has_back: bool = False) -> Image.Image:

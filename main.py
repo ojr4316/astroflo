@@ -110,7 +110,7 @@ def try_set_planet(scope: Telescope, name: str):
 
 def main():    
     scope = Telescope(
-        aperature=200,
+        aperture=200,
         focal_length=1200,
         eyepiece=25,
         eyepiece_fov=40,

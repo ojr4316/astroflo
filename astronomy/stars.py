@@ -161,8 +161,7 @@ class Stars:
                     marker = 'o' if obj['Name'] != 'SUN' else '*'
                     ax.plot(x, y, marker, markersize=size, color=color, markeredgecolor='white', markeredgewidth=2)
                     
-                    # Always label planets
-                    label_pos = (round(x + 0.03, 2), round(y, 2))
+                    label_pos = (round(x + 0.03, 1), round(y, 1))
                     if label_pos not in labeled_positions:
                         ax.text(*label_pos, obj['Name'], color='red', fontsize=12, clip_on=True, fontweight='bold')
                         labeled_positions.add(label_pos)
@@ -172,9 +171,10 @@ class Stars:
                     ax.plot(x, y, 'o', markersize=size, color='white')
                     
                     # Label bright stars
-                    label_pos = (round(x + 0.03, 2), round(y, 2))
-                    if mag < 4 and label_pos not in labeled_positions:
-                        ax.text(*label_pos, obj['Name'], color='red', fontsize=14, clip_on=True, fontweight='bold')
+                    label_pos = (round(x + 0.03, 1), round(y, 1))
+                    name = str(obj['Name']).strip().replace("--", "").upper()
+                    if mag < 10 and label_pos not in labeled_positions and len(name) > 0:
+                        ax.text(*label_pos, name, color='orange', fontsize=15, clip_on=True, fontweight='bold')
                         labeled_positions.add(label_pos)
 
             ax.set_facecolor('black')
@@ -199,6 +199,7 @@ class Stars:
         
         # Filter planets within FOV
         planets_in_fov = []
+        
         for planet_name, planet_data in self.planet_cache.items():
             if self.is_within_radius(ra, dec, planet_data['RAdeg'], planet_data['DEdeg'], radius):
                 planets_in_fov.append(planet_data)
@@ -216,16 +217,3 @@ class Stars:
         distance_rad = 2 * np.arcsin(np.sqrt(a))
         
         return distance_rad <= radius_rad
-
-
-#stars = Stars()
-#r = stars.radius_from_telescope(1200, 25, 40)
-#print(f"Telescope FOV is {r:.2f}")
-#star = stars.search_by_name('polaris')
-
-#s = time.time()
-#nearby = stars.search_by_coordinate(ra=star['RAdeg'], dec=star['DEdeg'], radius=r)
-#print(f"Found {len(nearby)} stars near {star['Name'][0]} at RA: {star['RAdeg'][0]}, DEC: {star['DEdeg'][0]}")
-#projected = stars.project_to_view(nearby, center_ra=star['RAdeg'][0], center_dec=star['DEdeg'][0], radius_deg=r, rotation=180)
-#stars.render_view(projected)
-#print(f"Done in {time.time() - s:.2f} seconds")

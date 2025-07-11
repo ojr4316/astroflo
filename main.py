@@ -73,7 +73,7 @@ def test_ui(flo: Astroflo, ui: UIManager):
 
     while True:
         ui.render()
-        time.sleep(3)
+        time.sleep(5)
         img = ui.render()
         img.show()
 
@@ -116,8 +116,8 @@ def main():
         eyepiece_fov=40,
     )
 
-    #try_set_planet(scope, "Neptune")
-    try_set_target(scope, "Mizar")
+    try_set_planet(scope, "Jupiter")
+    #try_set_target(scope, "80    UMa")
     solver = build_solver()
     cam = build_camera()
 

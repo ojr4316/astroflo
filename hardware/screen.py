@@ -72,7 +72,6 @@ if is_pi():
         def set_brightness(self, b: int):
             b = max(0.0, min(1.0, b))
             self.brightness = int((1.0 - b) * 255)
-            print(self.brightness)
             self.overlay = Image.new("RGBA", (self.width, self.height), (0, 0, 0, self.brightness))
 
         def draw_screen(self, img):

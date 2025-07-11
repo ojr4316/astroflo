@@ -12,8 +12,10 @@ class NavigationStarfield:
     def render(self):
         # Returns annotated starfield image and targeting information
         stars, brightest = self.render_stars()
-        nav, dist = self.simple_nav(stars)
-        return nav, dist
+        dist = 0
+        if self.tm.has_target():
+            stars, dist = self.simple_nav(stars)
+        return stars, dist
 
     def render_stars(self):
         r = self.stars.radius_from_telescope(self.scope.focal_length, self.scope.eyepiece, self.scope.eyepiece_fov) * self.scope.zoom
@@ -28,7 +30,6 @@ class NavigationStarfield:
         return self.stars.render_view(projected), str(brightest['Name']) if brightest else "--"
                         
     def project_target_to_view(self, target_ra, target_dec, center_ra, center_dec, radius_deg, rotation=0):
-        """Project a single target coordinate using the same stereographic projection as stars"""
         ra0 = np.radians(center_ra)
         dec0 = np.radians(center_dec)
         
@@ -48,11 +49,20 @@ class NavigationStarfield:
         x = -x
         x, y = self.stars.rotate(x, y, rotation)
         
-        # Convert angular FOV radius to radians and normalize
+        # Calculate angular separation directly from the spherical trig formula
+        # This gives the great-circle distance in radians
+        angular_distance_rad = np.arccos(np.clip(cos_c, -1.0, 1.0))
+        
+        # Convert to degrees
+        r_deg = np.degrees(angular_distance_rad)
+        
+        # Calculate x_norm and y_norm for UI display purposes
         radius_rad = np.radians(radius_deg)
-        x_norm = x / radius_rad
-        y_norm = y / radius_rad
-        r_deg = np.degrees(np.sqrt(x**2 + y**2))
+        if radius_rad > 0:
+            x_norm = x / radius_rad
+            y_norm = y / radius_rad
+        else:
+            x_norm, y_norm = 0, 0
         
         return x_norm, y_norm, r_deg
 
@@ -68,9 +78,10 @@ class NavigationStarfield:
         target_dec = self.scope.target_manager.dec
         
         image_size = 240
-        draw = ImageDraw.Draw(image)
-        if image is None:
-            image = Image.new("RGB", (image_size, image_size), "black")
+        overlay = Image.new("RGBA", (image_size, image_size), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(overlay)
+        #if image is None:
+        #    image = Image.new("RGB", (image_size, image_size), "black")
 
         r = self.stars.radius_from_telescope(self.scope.focal_length, self.scope.eyepiece, self.scope.eyepiece_fov) * self.scope.zoom
         x_norm, y_norm, r_deg = self.project_target_to_view(
@@ -81,9 +92,6 @@ class NavigationStarfield:
 
         if r_deg <= r:
             # Target in field of view - use projected coordinates
-            # The star rendering uses coordinates from -1 to 1, so we need to map our normalized coordinates
-            # to the same space. x_norm and y_norm are already in the correct coordinate space.
-            
             # Convert from normalized coordinates (-1 to 1) to pixel coordinates
             # Note: y-axis is flipped in image coordinates (top-left origin)
             pixel_x = center_x + x_norm * (image_size // 2)
@@ -106,10 +114,14 @@ class NavigationStarfield:
                 end_x = center_x + x_dir * max_arrow_len
                 end_y = center_y + y_dir * max_arrow_len
 
-                draw.line((center_x, center_y, end_x, end_y), fill="red", width=3)
+                color = (255, 0, 0, 100)
+                draw.line((center_x, center_y, end_x, end_y), fill=color, width=3)
                 draw.ellipse(
                     (end_x - 5, end_y - 5, end_x + 5, end_y + 5),
-                    fill="green"
+                    fill=color
                 )
 
+        image.convert("RGBA")
+        image.alpha_composite(overlay)
+        image.convert("RGB")
         return image, r_deg

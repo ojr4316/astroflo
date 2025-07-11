@@ -1,8 +1,5 @@
 from astronomy.stars import Stars
-from astropy.coordinates import SkyCoord, EarthLocation, GCRS
-
-from PIL import Image, ImageDraw
-import numpy as np
+from astropy.coordinates import EarthLocation
 from astronomy.ephemeris import Ephemeris
 
 class TargetManager:
@@ -14,6 +11,7 @@ class TargetManager:
             lon=location.lon.degree, 
             elevation=location.height.value
         )
+        
         self.stars = Stars(self.planets)
         
         # Current target information
@@ -21,10 +19,11 @@ class TargetManager:
         self.dec = None
         self.name = None
 
-        self.catalog = None
-        self.index = 0 
-        
-        self.distance = 0.0
+    def clear_target(self):
+        self.ra = self.dec = self.name = None
+
+    def has_target(self):
+        return self.ra is not None and self.dec is not None
 
     def set_target(self, ra: float, dec: float, name: str = None):
         self.ra = ra

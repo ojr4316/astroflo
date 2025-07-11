@@ -30,7 +30,7 @@ class UIManager:
         self.renderer = ScreenRenderer()
         self.input = Input()
         self.screen = Screen()
-        self.screen.set_brightness(0.8)
+        self.screen.set_brightness(0.6)
 
         self.selected = 0
         self.max_idx = 2
@@ -193,7 +193,10 @@ class UIManager:
             pos = self.scope.get_position()
             ra, dec = pos[0], pos[1]
             image, dist = self.scope.renderer.render()
-            return self.renderer.render_image_with_caption(image, f"RA:{ra:.4f}|DEC:{dec:.4f} ({(time.time()-self.pipeline.latest_timestamp):.1f}s)", f"{self.scope.viewing_angle}°|{round(1/self.scope.zoom, 2)}X|{round(dist, 4):.4e}")
+            target = ""
+            if self.scope.target_manager.has_target():
+                target = f"|{round(dist, 2)}° from FOV"
+            return self.renderer.render_image_with_caption(image, f"RA:{ra:.4f}|DEC:{dec:.4f} ({(time.time()-self.pipeline.latest_timestamp):.1f}s)", f"{self.scope.viewing_angle}°|{round(1/self.scope.zoom, 2)}X{target}")
         except Exception as e:
             print(f"Error rendering navigation: {e}")
             return self.renderer.render_image_with_caption(image, "Error rendering navigation")

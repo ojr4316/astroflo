@@ -1,10 +1,9 @@
-import os
 import numpy as np
 from astronomy.target import TargetManager
 from astropy.coordinates import EarthLocation
 import astropy.units as u
 from starplot.optics import Reflector, Optic
-from skyfield.api import wgs84, load
+from skyfield.api import load
 from astronomy.settings import TelescopeSettings
 from astronomy.renderer import NavigationStarfield
 from operation import OperationManager
@@ -17,8 +16,8 @@ rochester = EarthLocation(
 
 
 class Telescope:
-    def __init__(self, aperature: int, focal_length: int, eyepiece: int, eyepiece_fov: int, zoom: int = 1):
-        self.aperture = aperature
+    def __init__(self, aperture: int, focal_length: int, eyepiece: int, eyepiece_fov: int, zoom: int = 1):
+        self.aperture = aperture
         self.focal_length = focal_length
         self.eyepiece = eyepiece
         self.eyepiece_fov = eyepiece_fov

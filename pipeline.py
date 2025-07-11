@@ -1,26 +1,22 @@
 from typing import List, Optional
 from threading import Thread, Lock
-from datetime import timedelta
 import time
-import os
 from capture.camera import Camera
 from solve.solver import Solver
 from clean.image_processor import ImageProcessor
 from astronomy.telescope import Telescope
 from astronomy.stellarium import StellariumConnection
-from astropy.coordinates import SkyCoord, EarthLocation, AltAz
-from astropy.time import Time
-import astropy.units as u
 from astronomy.analyze import ImageAnalysis
 from operation import OperationManager
+from adjuster import Adjuster
 from PIL import Image
 
 class Astroflo:
+
     capturer: Camera = None
     solver: Solver = None
     processors: List[ImageProcessor] = []
-    ## Fail Manager
-    ## 
+    
     def __init__(self, capturer: Camera, solver: Solver, scope: Telescope, processors: Optional[List[ImageProcessor]] = None):
         self.capturer = capturer
         self.solver = solver
@@ -40,6 +36,9 @@ class Astroflo:
         if OperationManager.perform_analysis:
             self.analysis = ImageAnalysis()  
 
+        if OperationManager.dynamic_adjust:
+            self.adjuster = Adjuster(self.capturer)
+
         self._pipeline = Thread(target=self.pipeline, daemon=True)
 
            
@@ -57,7 +56,7 @@ class Astroflo:
         self._pipeline.start()
 
         if OperationManager.stellarium_server:
-            self.stellarium = StellariumConnection(self.scope)
+            self.stellarium = StellariumConnection()
             self.stellarium.run_server()
 
     def stop(self):
@@ -94,7 +93,7 @@ class Astroflo:
                         if (not self.latest_timestamp or timestamp > self.latest_timestamp) and result[1] != 'Failed':
                             self.set_latest(result, timestamp)
                     else:
-                        pass # TODO: add fail manager? 
+                        self.adjuster.fail()
 
     def set_latest(self, result, timestamp):
         image, coords, odds = result
@@ -106,7 +105,10 @@ class Astroflo:
         ra, dec = coords
         self.scope.solve_result(ra, dec)
         print(f"found new position: {ra}, {dec} at {timestamp}")
-        self.stellarium.new_position()
+        if OperationManager.stellarium_server:
+            self.stellarium.update_position(ra, dec)
+        if OperationManager.dynamic_adjust:
+            self.adjuster.success()
 
     def offset_pos_to_brightest_nearby(self):
         scope = self.scope

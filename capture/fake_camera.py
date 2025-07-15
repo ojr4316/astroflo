@@ -29,8 +29,6 @@ class FakeCamera(Camera):
         super().configure(exposure, gain)
 
     def capture(self):
-        if not self.running:
-            raise RuntimeError("Camera is not running. Please start the camera before capturing.")
         super().capture()
         time.sleep(self.exposure / 1e6)
 

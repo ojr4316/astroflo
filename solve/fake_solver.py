@@ -15,7 +15,7 @@ c = (17.15721, -5.3056)
 
 class FakeSolver(Solver):
     
-    target = mizar
+    target = altair
 
     def solve(self, image):
         time.sleep(2)

@@ -20,7 +20,7 @@ class NavigationStarfield:
     def render_stars(self):
         r = self.stars.radius_from_telescope(self.scope.focal_length, self.scope.eyepiece, self.scope.eyepiece_fov) * self.scope.zoom
         ra, dec = self.scope.get_position()
-        nearby = self.stars.search_by_coordinate(ra=ra, dec=dec, radius=r)
+        nearby = self.stars.search_by_coordinate(ra=ra, dec=dec, radius=r, mag_limit=self.scope.get_limiting_magnitude())
         
         brightest = None
         for star in nearby:

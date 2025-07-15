@@ -16,7 +16,7 @@ class Adjuster:
 
     def adjust(self, up=True):
         self.exposure = max(MIN_EXPOSURE, min(MAX_EXPOSURE, self.exposure + (ADJUST_SIZE if up else -ADJUST_SIZE)))
-        self.capturer.configure(self.exposure)
+        #self.capturer.configure(self.exposure)
 
     def fail(self):
         # End success streak and update total

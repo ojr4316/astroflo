@@ -59,7 +59,7 @@ class Telescope:
          # https://www.rocketmime.com/astronomy/Telescope/MagnitudeGain.html
 
         light_pollution_offset = 1 # TODO: Make this more dynamic or remove. But currently is too generous
-        return (2 + 5 * np.log10(self.aperture)) - light_pollution_offset
+        return (2 + 5 * np.log10(self.aperture)) - light_pollution_offset - (self.zoom/2)
     
     def optic(self) -> Optic:
         return Reflector(self.focal_length, self.eyepiece, self.eyepiece_fov + 10) # raise to better match stellarium
@@ -71,8 +71,9 @@ class Telescope:
     def get_position(self):
         return self.position
         
-    def solve_result(self, ra: float, dec: float):
+    def solve_result(self, ra: float, dec: float, roll: float = 0):
         self.mount_position = (ra, dec)
+        self.viewing_angle = roll
         ra += self.camera_offset[0]
         dec += self.camera_offset[1]
 

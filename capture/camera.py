@@ -25,13 +25,14 @@ class Camera(ABC):
         self.running = True
     
     @abstractmethod
-    def configure(self, exposure: int = 1_000_000, gain: float = 16.0):
+    def configure(self, exposure: int = 1_000_000, gain: float = 8.0):
         self.exposure = exposure
         self.gain = gain
 
     @abstractmethod
     def capture(self):
-       pass
+        if not self.running:
+            raise RuntimeError("Camera is not running. Please start the camera before capturing.")
     
     @abstractmethod
     def stop(self):

@@ -22,15 +22,17 @@ class ScreenState(Enum):
     DEBUG_SOLVE = 7
     NAVIGATE = 10
 
+init_text = ['\n', '\n', "~ ASTROFLO ~", "Calibrating camera and", "loading modified Tycho catalog.", '\n', '\n', "Please wait 5-10 seconds"]
+
 class UIManager:
-    def __init__(self, pipeline: Astroflo):
-        self.pipeline = pipeline
-        self.scope = pipeline.scope
+    def __init__(self):
+        self.pipeline = None
         self.state = ScreenState.MAIN_MENU
         self.renderer = ScreenRenderer()
         self.input = Input()
         self.screen = Screen()
-        self.screen.set_brightness(0.6)
+        self.screen.set_brightness(0.3)
+        self.screen.draw_screen(self.renderer.render_many_text(init_text))
 
         self.selected = 0
         self.max_idx = 2
@@ -39,6 +41,10 @@ class UIManager:
 
         self.grow = 0
         self.grow_max = 5
+
+    def init_pipeline(self, pipeline):
+        self.pipeline = pipeline
+        self.scope = pipeline.scope
 
     def reset_grow(self):
         self.grow = 0
@@ -135,10 +141,10 @@ class UIManager:
                     case 2: y -= 0.1
                 self.scope.camera_offset = (x, y)
         if self.state == ScreenState.NAVIGATE:
-            if self.scope.zoom < 5:
+            if self.scope.zoom < 10:
                 self.scope.zoom += 0.5
             else:
-                self.scope.zoom = 5
+                self.scope.zoom = 10
             
 
     def right(self):
@@ -196,7 +202,7 @@ class UIManager:
             target = ""
             if self.scope.target_manager.has_target():
                 target = f"|{round(dist, 2)}° from FOV"
-            return self.renderer.render_image_with_caption(image, f"RA:{ra:.4f}|DEC:{dec:.4f} ({(time.time()-self.pipeline.latest_timestamp):.1f}s)", f"{self.scope.viewing_angle}°|{round(1/self.scope.zoom, 2)}X{target}")
+            return self.renderer.render_image_with_caption(image, f"RA:{ra:.4f}|DEC:{dec:.4f} ({(time.time()-self.pipeline.latest_timestamp):.1f}s)", f"{self.scope.viewing_angle:.1f}°|{round(1/self.scope.zoom, 2)}X{target}")
         except Exception as e:
             print(f"Error rendering navigation: {e}")
             return self.renderer.render_image_with_caption(image, "Error rendering navigation")
@@ -264,13 +270,18 @@ class UIManager:
             case ScreenState.NAVIGATE: return self.render_navigation()
             case ScreenState.DEBUG_HARDWARE: return self.render_debug_hardware()
 
+    def handle_input(self):
+        self.screen.handle_input(self.input)
+
     def loop(self):
+        if self.pipeline == None:
+            time.sleep(0.2)
+            self.loop()
+            return
         if os.name == 'nt' or os.uname().nodename != "rpi":
             return
         while True:
             self.screen.draw_screen(self.render())
-            self.screen.handle_input(self.input)
-
             self.scope.viewing_angle += self.grow
             if self.scope.viewing_angle > 359:
                 self.scope.viewing_angle = 0

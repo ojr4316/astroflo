@@ -1,34 +1,20 @@
 import os
 import time
-import io
-import argparse
 import threading
-from enum import Enum
-import matplotlib.pyplot as plt
-from PIL import Image
-from skyfield.api import load
-
-from hardware import ui
-from pipeline import Astroflo
-
-from capture.fake_camera import FakeCamera
-from solve.astrometry_handler import AstrometryNetSolver
-from solve.fake_solver import FakeSolver
-
-from astronomy.telescope import Telescope
-
-from hardware.ui import UIManager, ScreenState
-
-from utils import is_pi
-
 import matplotlib
-
+from pipeline import Astroflo
+from hardware.ui import UIManager, ScreenState
+from astronomy.telescope import Telescope
 from operation import OperationManager
+from capture.fake_camera import FakeCamera
+from solve.fake_solver import FakeSolver
+from operation import OperationManager
+from utils import is_pi
+import matplotlib.pyplot as plt
 
+# For Star Rendering, Windows really doesn't like Agg for multi-threading
 if os.name != 'nt':
     matplotlib.use("Agg")
-    # For Star Rendering
-    # Windows really doesn't like Agg for multi-threading
     # Mac and Linux NEED Agg for multi-threading
 
 def build_camera():
@@ -49,21 +35,9 @@ def build_solver():
         return Tetra3Solver()
     else:
         return FakeSolver()
-
+    
 def test_ui(flo: Astroflo, ui: UIManager):
-    
-    #scope.solve_result(200.98785, 54.7958) # Mizar
-   
-    #scope.target_manager.set_target(CelestialObject("Alcor", 4.0, "Double", "", 201.31280, 54.9915, "", True))
-    #scope.set_position(0.0, 0.0)
-    ui.state = ScreenState.NAVIGATE #ui.selected = 27
-    #scope.target_manager.catalog = "messier"
-    #m45 = scope.target_manager.catalog_loader.search_objects(name="M45")
-    #target = scope.observe_local("jupiter")
-    #target = m45[0] if m45 else CelestialObject("M45", 0, "Pleiades", "", 56.64, 24.1167, "", False)
-    #scope.target_manager.set_target(target)
-    
-
+    ui.state = ScreenState.NAVIGATE
     flo.scope.set_camera_offset(0.0, 0.0)
 
     ui.render()
@@ -73,23 +47,21 @@ def test_ui(flo: Astroflo, ui: UIManager):
 
     while True:
         ui.render()
-        time.sleep(5)
+        time.sleep(8)
         img = ui.render()
         img.show()
-
-    #flo.offset_pos_to_brightest_nearby()
-    #ui.render()
-    #time.sleep(2)
-    #img = ui.render()
-    #img.show()
+        time.sleep(100)
     
 
 def running(flo: Astroflo, ui: UIManager):
-    #ui.state = ScreenState.NAVIGATE
+    last = time.perf_counter()
+    ui.handle_input()
+    now = time.perf_counter()
+    delta = now - last
+    last = now
     if OperationManager.drift:
-        drift_render_interval = 0.5
-        flo.scope.sky_drift(drift_render_interval)
-        time.sleep(drift_render_interval)
+        flo.scope.sky_drift(delta)
+    time.sleep(0.01)
 
 def try_set_target(scope: Telescope, name: str):
     target = scope.target_manager.stars.search_by_name(name)
@@ -109,6 +81,7 @@ def try_set_planet(scope: Telescope, name: str):
         print(f"Planet '{name}' not found in catalog.")
 
 def main():    
+    ui = UIManager()
     scope = Telescope(
         aperture=200,
         focal_length=1200,
@@ -122,11 +95,12 @@ def main():
     cam = build_camera()
 
     flo = Astroflo(cam, solver, scope)
-    ui = UIManager(flo)
     ui_thread = threading.Thread(target=ui.loop, daemon=True)
     ui_thread.start()
     flo.start()
 
+    ui.init_pipeline(flo)
+    ui.state = ScreenState.NAVIGATE
     if OperationManager.render_test:
         test_ui(flo, ui)
     else:

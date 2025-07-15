@@ -45,7 +45,7 @@ class Astroflo:
     
     def start(self):
         # Configure camera resasonably before start
-        self.capturer.configure(2_000_000)
+        self.capturer.configure(1_500_000)
         self.capturer.start()
         
         # Configure Solver
@@ -94,18 +94,34 @@ class Astroflo:
                             self.set_latest(result, timestamp)
                     else:
                         self.adjuster.fail()
+            time.sleep(0.1)
 
     def set_latest(self, result, timestamp):
-        image, coords, odds = result
+        coords, roll = result
+        ra, dec = coords
+        self.latest_timestamp = timestamp
+        if self.latest is not None:
+            old_coords, old_roll = self.latest['result']
+            ora, odec = round(old_coords[0], 2), round(old_coords[1], 2)
+            rra, rdec = round(ra, 2), round(dec, 2)
+            new_result = ora != rra or odec != rdec
+            if not new_result:
+                self.latest = {
+                    'result': result,
+                    'timestamp': timestamp
+                }
+                return
+
         self.latest = {
             'result': result,
             'timestamp': timestamp
         }
-        self.latest_timestamp = timestamp
-        ra, dec = coords
-        self.scope.solve_result(ra, dec)
+        
+        # Only update scope (renders) and stellarium if new result
+        self.scope.solve_result(ra, dec, roll)
         print(f"found new position: {ra}, {dec} at {timestamp}")
         if OperationManager.stellarium_server:
+            ra, dec = self.scope.get_position()
             self.stellarium.update_position(ra, dec)
         if OperationManager.dynamic_adjust:
             self.adjuster.success()

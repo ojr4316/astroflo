@@ -1,11 +1,9 @@
 from capture.camera import Camera
 import time
-import datetime
-import os
-import cv2
 from picamera2 import Picamera2
 from operation import OperationManager
 from PIL import Image
+import numpy as np
 
 low_res = (640, 480)
 high_res = (4056, 3040)
@@ -33,13 +31,13 @@ class RPiCamera(Camera):
         self.last_metadata = self.picam2.capture_metadata()            
 
         if not OperationManager.use_real_images:
-            return Image.open("./captures/20250526_225300.jpg")
+            return np.array(Image.open("./captures/20250526_225300.jpg"))
         if OperationManager.save_over:
             self.save_frame(frame)
         return frame#self.save_frame(frame)
  
 
-    def configure(self, goal_exposure, goal_gain=16, max_attempts=10):
+    def configure(self, goal_exposure, goal_gain=2, max_attempts=10):
         super().configure(goal_exposure, goal_gain)
 
         currently_on = self.running

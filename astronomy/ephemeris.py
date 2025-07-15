@@ -26,7 +26,7 @@ class Ephemeris:
         self.location = wgs84.latlon(lat, lon, elevation)
         self.ephemeris_file = ephemeris_file
         self.planets = load(ephemeris_file)
-        self.asteroids = load(asteroids_file)
+        #self.asteroids = load(asteroids_file)
         self.earth = self.planets["EARTH"]
         self.topocentric = self.earth + self.location
         self.timescale = load.timescale()
@@ -47,12 +47,12 @@ class Ephemeris:
         for planet_name in self.names:
             positions[planet_name] = self.get_current_position(planet_name)
         
-        for target_id in self.asteroids.names():
-            if target_id == 10: 
-                continue # Skip Sun!
-            asteroid_position = self.get_current_position_asteroid(target_id)
-            if asteroid_position:
-                positions[asteroid_position['Name']] = asteroid_position
+        #for target_id in self.asteroids.names():
+        #    if target_id == 10: 
+        #        continue # Skip Sun!
+        #    asteroid_position = self.get_current_position_asteroid(target_id)
+        #    if asteroid_position:
+        #        positions[asteroid_position['Name']] = asteroid_position
         
         return positions
     

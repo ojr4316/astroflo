@@ -95,8 +95,8 @@ def main():
         eyepiece_fov=40,
     )
 
-    try_set_planet(scope, "Jupiter")
-    #try_set_target(scope, "80    UMa")
+    #try_set_planet(scope, "Jupiter")
+    try_set_target(scope, "Alshain")
     solver = build_solver()
     cam = build_camera()
 

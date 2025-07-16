@@ -252,7 +252,7 @@ class UIManager:
             self.pipeline.configuring = True
         if self.pipeline.latest_image is None:
             return self.renderer.render_many_text(["Waiting for first image..."])
-        fwhm = self.pipeline.analysis.fwhm_values[-1]
+        fwhm = self.pipeline.analysis.fwhm_values[-1]  if len(self.pipeline.analysis.fwhm_values) > 0 else 1000
         min_fwhm = min(self.pipeline.analysis.fwhm_values) if self.pipeline.analysis.fwhm_values else 0.0
 
         return self.renderer.render_image_with_caption(
@@ -297,7 +297,7 @@ class UIManager:
             target_ra, target_dec = self.scope.target_manager.get_target_position()
             ra, dec = self.scope.get_position()
             x, xdist = self.shortest(ra, target_ra, ["right", "left"])
-            y, ydist = self.shortest(dec, target_dec, ["down", "up"])
+            y, ydist = self.shortest(dec, target_dec, ["up", "down"])
 
             return self.renderer.render_many_text(['\n', 'CURRENT TARGET:', target_name, '\n', x.upper(), '\n', y.upper(), '\n', "Distance:", f"{xdist}, {ydist}", f"Last Solve: {(time.time()-self.pipeline.latest_timestamp):.1f}s"])
         return self.renderer.render_many_text(["No target set."])

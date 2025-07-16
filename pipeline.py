@@ -59,7 +59,7 @@ class Astroflo:
         if self.configuring and hasattr(self, "analysis"):
             loc = self.analysis.find_brightest(img)
             if loc is not None:
-                y, x = loc[0]
+                y, x, _ = loc[0]
                 half_size = 40
                 box = (
                     max(x - half_size, 0),

@@ -23,7 +23,7 @@ class ScreenState(Enum):
     DIRECTION = 9
     NAVIGATE = 10
 
-init_text = ['\n', '\n', "~ ASTROFLO ~", "Calibrating camera and", "loading modified Tycho catalog.", '\n', '\n', "Please wait 5-10 seconds"]
+init_text = ['\n', '\n', "~ ASTROFLO ~", "Calibrating camera", "and loading modified", "Tycho catalog.", '\n', '\n', "Please wait 5-10 seconds"]
 
 class UIManager:
     def __init__(self):
@@ -86,9 +86,8 @@ class UIManager:
             case ScreenState.MAIN_MENU: 
                 match self.selected:
                     case 0: self.state = ScreenState.CONFIGURE_TELESCOPE
-                    case 1: self.state = ScreenState.CONFIGURE_CAMERA
-                    case 2: self.state = ScreenState.TARGET_LIST
-                    case 3: self.state = ScreenState.NAVIGATE
+                    case 1: self.state = ScreenState.DIRECTION
+                    case 2: self.state = ScreenState.NAVIGATE
 
             case ScreenState.CONFIGURE_TELESCOPE:
                 match self.selected:
@@ -168,8 +167,8 @@ class UIManager:
 
     def render_main_menu(self):
         title = "~ASTROFLO MENU~"
-        options = ["Telescope", "Camera", "Targets", "Navigate"]
-        self.max_idx = 3
+        options = ["Target Select", "Directions", "Navigate"]
+        self.max_idx = 2
         return self.renderer.render_menu(title, options, self.selected)
     
     def render_telescope_settings(self):
@@ -203,7 +202,7 @@ class UIManager:
             target = ""
             if self.scope.target_manager.has_target():
                 target = f"|{round(dist, 2)}° from FOV"
-            return self.renderer.render_image_with_caption(image, f"RA:{ra:.4f}|DEC:{dec:.4f} ({(time.time()-self.pipeline.latest_timestamp):.1f}s)", f"{self.scope.viewing_angle:.1f}°|{round(1/self.scope.zoom, 2)}X{target}")
+            return self.renderer.render_image_with_caption(image, f"RA:{ra:.3f}|DEC:{dec:.3f} ({(time.time()-self.pipeline.latest_timestamp):.1f}s)", f"{self.scope.viewing_angle:.1f}°|{round(1/self.scope.zoom, 2)}X{target}")
         except Exception as e:
             print(f"Error rendering navigation: {e}")
             return self.renderer.render_image_with_caption(image, "Error rendering navigation")
@@ -229,15 +228,17 @@ class UIManager:
         screen_text = [
             pos_str,
             f"Local: {local_time.strftime('%Y-%m-%d %H:%M:%S')}",
-            f"UTC: {utc}",
+            f"{utc}",
             f"Julian Date: {julian_date:.5f}",
             f"LST: {lst:.2f}h",
             
             f"{location.lat.degree:.4f}°N, {location.lon.degree:.4f}°E",
-            f"Viewing Angle: {self.scope.viewing_angle}°",
             f"Lens: {self.scope.eyepiece}mm ({self.scope.eyepiece_fov}° AFOV)",
             f"APT: {self.scope.aperture}mm FL: {self.scope.focal_length}mm",
         ]
+
+        if not hasattr(self.pipeline, "analysis"):
+            return self.renderer.render_many_text(screen_text)
 
         latest_analysis = self.pipeline.analysis.get_latest()
         if latest_analysis is not None:
@@ -260,28 +261,32 @@ class UIManager:
         )
     
     def dist_word(self, dist: float):
+        dist = abs(dist)
         if dist < 1:
             return "nearby"
-        elif dist < 10:
+        elif dist < 20:
             return "close"
         elif dist < 80:
             return "far"
         else:
             return "distant"
         
-
     def shortest(self, current: float, target: float, directions: list[str]):
         current %= 360
         target %= 360
-        delta = (target - current) % 360
+        delta = abs(target - current) % 360
         if delta == 0:
-            return 0
+            return ""
         elif delta <= 180:
-            dist = round(target - current, 2)
-            return f"{self.dist_word(dist)} {directions[0]} ({dist})"
+            dist = round(delta, 2)
+            if directions[0] == "down":
+                dist *= -1
+            return f"{self.dist_word(dist)} {directions[0]}", dist
         else:
-            dist = round(360 - (target - current), 2)
-            return f"{self.dist_word(dist)} {directions[1]} ({dist})"
+            dist = round(360 - delta, 2)
+            if directions[1] == "left":
+                dist *= -1
+            return f"{self.dist_word(dist)} {directions[1]}", dist
 
     def render_directions(self):
         if self.scope.position is None:
@@ -291,10 +296,10 @@ class UIManager:
             target_name = self.scope.target_manager.name
             target_ra, target_dec = self.scope.target_manager.get_target_position()
             ra, dec = self.scope.get_position()
-            x = self.shortest(ra, target_ra, ["right", "left"])
-            y = self.shortest(dec, target_dec, ["up", "down"])
+            x, xdist = self.shortest(ra, target_ra, ["right", "left"])
+            y, ydist = self.shortest(dec, target_dec, ["down", "up"])
 
-            return self.renderer.render_many_text(['\n', target_name, x, y])
+            return self.renderer.render_many_text(['\n', 'CURRENT TARGET:', target_name, '\n', x.upper(), '\n', y.upper(), '\n', "Distance:", f"{xdist}, {ydist}", f"Last Solve: {(time.time()-self.pipeline.latest_timestamp):.1f}s"])
         return self.renderer.render_many_text(["No target set."])
 
     def render(self):

@@ -46,14 +46,11 @@ class Astroflo:
            
     
     def start(self):
-        # Configure camera resasonably before start
-        self.capturer.configure(1_500_000)
         self.capturer.start()
         
         # Configure Solver
-        self.solver.limit = 30
-        self.solver.scale = 19
-        self.solver.downsample = 4
+        self.solver.fov = 22
+
         self.running = True
         self._pipeline.start()
 
@@ -66,6 +63,23 @@ class Astroflo:
         if self.capture_thread.is_alive():
             self.capture_thread.join(timeout=2.0)
     
+    def configure_camera(self, img):
+        if self.configuring and hasattr(self, "analysis"):
+            loc = self.analysis.find_brightest(img)
+            if loc is not None:
+                y, x, _ = loc[0]
+                half_size = 40
+                box = (
+                    max(x - half_size, 0),
+                    max(y - half_size, 0),
+                    min(x + half_size, img.shape[1]),
+                    min(y + half_size, img.shape[0])
+                )
+                cropped = Image.fromarray(img).crop(box)
+                self.latest_image = cropped.resize((240, 240), resample=Image.BILINEAR)
+                return True
+        return False
+
     def pipeline(self):
         self.running = True
         while self.running:
@@ -74,20 +88,11 @@ class Astroflo:
                 timestamp = time.time()
                 if OperationManager.perform_analysis:
                     self.analysis.add_image(img)
-                if self.configuring:
-                    loc = self.analysis.find_brightest(img)
-                    if loc is not None:
-                        y, x, _ = loc[0]  # Just location, ignore channel
-                        half_size = 40
-                        box = (
-                            max(x - half_size, 0),
-                            max(y - half_size, 0),
-                            min(x + half_size, img.shape[1]),
-                            min(y + half_size, img.shape[0])
-                        )
-                        cropped = Image.fromarray(img).crop(box)
-                        self.latest_image = cropped.resize((240, 240), resample=Image.BILINEAR)
-                        continue
+                
+                configuring = self.configure_camera(img)
+                if configuring:
+                    continue
+
                 result = self.solver.solve(img)
                 with self.state_lock:
                     if result is not None:
@@ -102,6 +107,8 @@ class Astroflo:
         coords, roll = result
         ra, dec = coords
         self.latest_timestamp = timestamp
+
+        self.scope.solve_result(ra, dec, roll) # move
         if self.latest is not None:
             old_coords, old_roll = self.latest['result']
             ora, odec = round(old_coords[0], 2), round(old_coords[1], 2)
@@ -120,7 +127,7 @@ class Astroflo:
         }
         
         # Only update scope (renders) and stellarium if new result
-        self.scope.solve_result(ra, dec, roll)
+        
         print(f"found new position: {ra}, {dec} at {timestamp}")
         if OperationManager.stellarium_server:
             ra, dec = self.scope.get_position()

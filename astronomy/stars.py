@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 import os
 from utils import plt_to_img
 import threading
+import pandas
+from skyfield.api import Angle
 
 def clean(n) -> str:
     if n is np.ma.masked:
@@ -40,7 +42,7 @@ class Stars:
     def search_by_coordinate(self, ra: float, dec: float, radius: float = 0.05, mag_limit: float = 13): # FOV in degrees
         within_radius = self.is_within_radius(ra, dec, self.tycho['RAdeg'], self.tycho['DEdeg'], radius)
         star_results = self.tycho[within_radius]
-        #star_results = star_results[star_results['Vmag'] <= mag_limit]
+        star_results = star_results[star_results['Vmag'] <= mag_limit]
 
         planets_in_fov = self.get_planets_in_fov(ra, dec, radius)
         
@@ -96,6 +98,7 @@ class Stars:
         for obj in objects:
             ra = np.radians(obj['RAdeg'])
             dec = np.radians(obj['DEdeg'])
+
             delta_ra = ra - ra0
             
             # Gnomonic projection
@@ -138,9 +141,8 @@ class Stars:
             ax.set_ylim(-1, 1)
             circle = plt.Circle((0, 0), 1, color='red', fill=False)
             ax.add_patch(circle)
-            #ax.text(5, 0, "N", color='white', fontsize=18)
             ax.text(-0.98, 0, 'E', color='white', fontsize=12, va='center', ha='right')
-            ax.text(1, 0, 'W', color='white', fontsize=12, va='center', ha='right')
+            ax.text(1.02, 0, 'W', color='white', fontsize=12, va='center', ha='right')
 
             # Plot objects
             labeled_positions = set()
@@ -170,7 +172,7 @@ class Stars:
                     label_pos = (round(x + 0.03, 1), round(y, 1))
                     name = str(obj['Name']).strip().replace("--", "").upper()
                     if mag < 10 and label_pos not in labeled_positions and len(name) > 0:
-                        #ax.text(*label_pos, name, color='orange', fontsize=15, clip_on=True, fontweight='bold')
+                        ax.text(*label_pos, name, color='orange', fontsize=15, clip_on=True, fontweight='bold')
                         labeled_positions.add(label_pos)
 
             ax.set_facecolor('black')

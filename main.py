@@ -53,13 +53,14 @@ def test_ui(flo: Astroflo, ui: UIManager):
         time.sleep(100)
     
 
+last_time = None
 def running(flo: Astroflo, ui: UIManager):
-    last = time.perf_counter()
+    global last_time
     now = time.perf_counter()
-    delta = now - last
-    last = now
+    delta = now - last_time if last_time is not None else 0
+    last_time = now
+    last_time = time.perf_counter()
     if OperationManager.drift:
-        delta *= 100
         flo.scope.sky_drift(delta)
         time.sleep(delta)
     time.sleep(0.01)

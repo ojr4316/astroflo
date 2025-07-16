@@ -3,6 +3,18 @@ import os
 import cv2
 import datetime
 import threading
+from enum import Enum
+
+class GainProfile(Enum):
+    HIGH=16.0
+    MID=8.0
+    LOW=2.0
+
+class ExposureProfile(Enum):
+    FAST=300_000
+    DEFAULT=600_000
+    LONG=1_500_000
+    STACK=10_000_000
 
 class Camera(ABC):
 
@@ -23,6 +35,7 @@ class Camera(ABC):
     @abstractmethod
     def start(self):
         self.running = True
+        self.configure(ExposureProfile.DEFAULT.value, GainProfile.HIGH.value)
     
     @abstractmethod
     def configure(self, exposure: int = 1_000_000, gain: float = 8.0):

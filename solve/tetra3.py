@@ -21,17 +21,16 @@ from tetra3 import cedar_detect_client
 # Actually Cedar
 class Tetra3Solver(Solver):
 
-    def __init__(self):
+    def __init__(self, fov=22):
         super().__init__()
         self.t3 = Tetra3()
         self.cedar_detect = cedar_detect_client.CedarDetectClient()
         #self.t3.generate_database(min_fov=15, max_fov=20, star_max_magnitude=7, save_as='default_database', star_catalog="bsc5")
-        self.fov = 22 # TODO: set with camera
+        self.fov = fov # TODO: set with camera
 
 
     def solve(self, image):
         try:
-            start = time.time()
             image = np.array(image)
             if image.ndim == 3:
                 image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -45,10 +44,6 @@ class Tetra3Solver(Solver):
             ra = result['RA']
             dec = result['Dec']
             roll = result['Roll']
-
-            #print(result)
-            #print(f"Solved in {time.time() - start:.2f} seconds")
-
             if ra is not None:
                  coords = (ra, dec)
                  return (coords, roll)   

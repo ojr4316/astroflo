@@ -20,7 +20,6 @@ class RPiCamera(Camera):
  
     def start(self):
         self.picam2.start()
-        self.running = True
         super().start()
         print("Camera controller started!")
  

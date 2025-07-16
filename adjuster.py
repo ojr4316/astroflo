@@ -1,3 +1,4 @@
+import time
 from capture.camera import Camera
 
 ADJUST_LIMIT = 5
@@ -13,10 +14,11 @@ class Adjuster:
         self.recent_successes = 0
         self.total_successes = 0
         self.exposure = exposure
+        self.adjustment = True
 
     def adjust(self, up=True):
         self.exposure = max(MIN_EXPOSURE, min(MAX_EXPOSURE, self.exposure + (ADJUST_SIZE if up else -ADJUST_SIZE)))
-        #self.capturer.configure(self.exposure)
+        if self.adjustment: self.capturer.configure(self.exposure)
 
     def fail(self):
         # End success streak and update total
@@ -36,4 +38,5 @@ class Adjuster:
         self.recent_successes += 1
         if self.recent_successes >= ADJUST_LIMIT * 2:
             # Solve Streak! decrease exposure to attempt speed up
+            time.sleep(0.2)
             self.adjust(False)

@@ -98,7 +98,7 @@ class Telescope:
         if self.position == None:
             return
         ra, dec = self.position # edit raw position without cam offset
-        ra_offset = (15 * np.cos(dec)) * t / 240 # Sky Drift, scaled by time, to hours
+        ra_offset = (15 * np.cos(dec)) * t / (60*60) # Sky Drift, scaled by time, to hours
         new_ra = ra + ra_offset
         self.position = (new_ra, dec)
         

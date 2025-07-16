@@ -18,6 +18,6 @@ class FakeSolver(Solver):
     target = altair
 
     def solve(self, image):
-        time.sleep(2)
+        time.sleep(0.3)
         #self.target = (self.target[0] - 0.1, self.target[1] + 0.3)
-        return ((image, self.target, 100))
+        return (self.target, 0)

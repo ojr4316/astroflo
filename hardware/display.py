@@ -12,7 +12,7 @@ class ScreenRenderer:
     BTN_SELECTED_COLOR = (140, 35, 35)
     FONT_PATH = fm.findfont(fm.FontProperties())
     def __init__(self):
-        self.font = ImageFont.truetype(self.FONT_PATH, 14)
+        self.font = ImageFont.truetype(self.FONT_PATH, 16)
         self.small_font = ImageFont.truetype(self.FONT_PATH, 12)
         self.large_font = ImageFont.truetype(self.FONT_PATH, 24)
 

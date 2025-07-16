@@ -11,6 +11,8 @@ from operation import OperationManager
 from adjuster import Adjuster
 from PIL import Image
 
+MIN_MAG_TO_OFFSET = 5
+
 class Astroflo:
 
     capturer: Camera = None
@@ -147,6 +149,11 @@ class Astroflo:
             for s in nearby:
                 if s['Vmag'] < brightest['Vmag']: # TODO: fix for negative amgs
                     brightest = s
+            
+            if brightest['Vmag'] > MIN_MAG_TO_OFFSET:
+                print("No bright star nearby")
+                return
+
             tra, tdec = brightest['RAdeg'], brightest['DEdeg']
             x_offset = tra - ra
             y_offset = tdec - dec

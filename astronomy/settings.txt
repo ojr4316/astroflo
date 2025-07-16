@@ -2,6 +2,6 @@ aperture: 200
 focal_length: 1200
 eyepiece: 25
 eyepiece_fov: 40
-x_offset: 0.0
-y_offset: 0.0
-view_angle: 180
+x_offset: -0.3
+y_offset: -1.3
+view_angle: 46.13090447622297

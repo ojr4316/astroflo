@@ -35,7 +35,7 @@ class TelescopeSettings:
         self.scope.eyepiece = int(settings["eyepiece"])
         self.scope.eyepiece_fov = int(settings["eyepiece_fov"])
         self.scope.camera_offset = (float(settings["x_offset"]), float(settings["y_offset"]))
-        self.scope.viewing_angle = int(settings["view_angle"])
+        self.scope.viewing_angle = float(settings["view_angle"])
         print(f"Settings loaded from {SETTINGS_FILE}")
 
     def save_coord(self):

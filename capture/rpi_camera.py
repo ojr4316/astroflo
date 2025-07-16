@@ -45,7 +45,6 @@ class RPiCamera(Camera):
             self.picam2.start()
 
         self.picam2.set_controls({
-            "AeEnable": False,
             "AwbEnable": False,
             "ExposureTime": int(goal_exposure),
             "AnalogueGain": float(goal_gain)

@@ -20,6 +20,7 @@ class ScreenState(Enum):
     DEBUG_SOFTWARE = 5
     DEBUG_HARDWARE = 6
     DEBUG_SOLVE = 7
+    DIRECTION = 9
     NAVIGATE = 10
 
 init_text = ['\n', '\n', "~ ASTROFLO ~", "Calibrating camera and", "loading modified Tycho catalog.", '\n', '\n', "Please wait 5-10 seconds"]
@@ -76,7 +77,7 @@ class UIManager:
             case ScreenState.DEBUG_SOFTWARE:
                 self.pipeline.configuring = True
                 self.state = ScreenState.DEBUG_HARDWARE
-            case ScreenState.DEBUG_HARDWARE:
+            case ScreenState.DEBUG_HARDWARE | ScreenState.DIRECTION:
                 self.pipeline.stop_configuring()
                 self.state = ScreenState.NAVIGATE
 
@@ -207,7 +208,6 @@ class UIManager:
             print(f"Error rendering navigation: {e}")
             return self.renderer.render_image_with_caption(image, "Error rendering navigation")
 
-
     def render_debug_software(self):
         # get time 
         time = self.scope.get_time()
@@ -258,6 +258,44 @@ class UIManager:
             self.pipeline.latest_image if self.pipeline.latest_image is not None else Image.new("RGB", (240, 240)),
             f"FWHM: {fwhm:.2f}", f"Min FWHM found: {min_fwhm:.2f}"
         )
+    
+    def dist_word(self, dist: float):
+        if dist < 1:
+            return "nearby"
+        elif dist < 10:
+            return "close"
+        elif dist < 80:
+            return "far"
+        else:
+            return "distant"
+        
+
+    def shortest(self, current: float, target: float, directions: list[str]):
+        current %= 360
+        target %= 360
+        delta = (target - current) % 360
+        if delta == 0:
+            return 0
+        elif delta <= 180:
+            dist = round(target - current, 2)
+            return f"{self.dist_word(dist)} {directions[0]} ({dist})"
+        else:
+            dist = round(360 - (target - current), 2)
+            return f"{self.dist_word(dist)} {directions[1]} ({dist})"
+
+    def render_directions(self):
+        if self.scope.position is None:
+            return self.renderer.render_many_text(["Waiting for first solve..."])
+
+        if self.scope.target_manager.has_target():
+            target_name = self.scope.target_manager.name
+            target_ra, target_dec = self.scope.target_manager.get_target_position()
+            ra, dec = self.scope.get_position()
+            x = self.shortest(ra, target_ra, ["right", "left"])
+            y = self.shortest(dec, target_dec, ["up", "down"])
+
+            return self.renderer.render_many_text(['\n', target_name, x, y])
+        return self.renderer.render_many_text(["No target set."])
 
     def render(self):
         match(self.state):
@@ -269,6 +307,7 @@ class UIManager:
             case ScreenState.DEBUG_SOFTWARE: return self.render_debug_software()
             case ScreenState.NAVIGATE: return self.render_navigation()
             case ScreenState.DEBUG_HARDWARE: return self.render_debug_hardware()
+            case ScreenState.DIRECTION: return self.render_directions()
 
     def handle_input(self):
         self.screen.handle_input(self.input)

@@ -37,7 +37,7 @@ def build_solver():
         return FakeSolver()
     
 def test_ui(flo: Astroflo, ui: UIManager):
-    ui.state = ScreenState.NAVIGATE
+    ui.state = ScreenState.DIRECTION
     flo.scope.set_camera_offset(0.0, 0.0)
 
     ui.render()
@@ -55,13 +55,19 @@ def test_ui(flo: Astroflo, ui: UIManager):
 
 def running(flo: Astroflo, ui: UIManager):
     last = time.perf_counter()
-    ui.handle_input()
     now = time.perf_counter()
     delta = now - last
     last = now
     if OperationManager.drift:
+        delta *= 100
         flo.scope.sky_drift(delta)
+        time.sleep(delta)
     time.sleep(0.01)
+
+def handle_input(ui: UIManager):
+    while True:
+        ui.handle_input()
+        time.sleep(0.01)
 
 def try_set_target(scope: Telescope, name: str):
     target = scope.target_manager.stars.search_by_name(name)
@@ -97,10 +103,12 @@ def main():
     flo = Astroflo(cam, solver, scope)
     ui_thread = threading.Thread(target=ui.loop, daemon=True)
     ui_thread.start()
+    input_thread = threading.Thread(target=handle_input, args=[ui], daemon=True)
+    input_thread.start()
     flo.start()
 
     ui.init_pipeline(flo)
-    ui.state = ScreenState.NAVIGATE
+    ui.state = ScreenState.DIRECTION
     if OperationManager.render_test:
         test_ui(flo, ui)
     else:

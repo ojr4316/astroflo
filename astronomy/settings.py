@@ -1,8 +1,8 @@
 import os
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-SETTINGS_FILE = os.path.join(BASE_DIR, "settings.txt")
-COORD_LOG = os.path.join(BASE_DIR, "coord_log.txt")
+SETTINGS_FILE = os.path.join(BASE_DIR, "..", "settings.txt")
+COORD_LOG = os.path.join(BASE_DIR, "..", "coord_log.txt")
 
 class TelescopeSettings:
     def __init__(self, scope):
@@ -17,16 +17,16 @@ class TelescopeSettings:
     
     def save(self): 
         settings = {**self.get_settings(), **self.get_cam_settings()}
-        with open(SETTINGS_FILE, "w") as f:
+        with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
             for key, value in settings.items():
                 f.write(f"{key}: {value}\n")
 
     def load(self):
         if not os.path.exists(SETTINGS_FILE):
-            self.save_settings()
+            self.save()
             return
         settings = {}
-        with open(SETTINGS_FILE, "r") as f:
+        with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
             for line in f:
                 key, value = line.strip().split(": ")
                 settings[key] = value
@@ -39,6 +39,6 @@ class TelescopeSettings:
         print(f"Settings loaded from {SETTINGS_FILE}")
 
     def save_coord(self):
-        with open(COORD_LOG, "a") as f:
+        with open(COORD_LOG, "a", encoding="utf-8") as f:
             log = f"{self.scope.get_time().utc_strftime('%Y-%m-%d %H:%M:%S')} - {self.scope.get_position()}\n"
             f.write(log)

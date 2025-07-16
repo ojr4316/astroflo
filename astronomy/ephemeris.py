@@ -4,8 +4,8 @@ from skyfield.api import wgs84, load
 from skyfield.positionlib import ICRF
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-ephemeris_file = os.path.join(BASE_DIR, "..", "de440s.bsp")
-asteroids_file = os.path.join(BASE_DIR, "..", "sb441-n16.bsp")
+ephemeris_file = os.path.join(BASE_DIR, "..", 'data', "de440s.bsp")
+asteroids_file = os.path.join(BASE_DIR, "..", 'data', "sb441-n16.bsp")
 
 def clean(n) -> str:
     if isinstance(n, list):

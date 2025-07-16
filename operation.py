@@ -18,8 +18,3 @@ class OperationManager:
     dynamic_adjust: bool = False # Dynamically adjust exposure based on success rate
 
     render_test: bool = False # open preview of display
-
-    def __init__(self, real_images: bool = True, stellarium_server: bool = True):
-        OperationManager.use_real_images = real_images
-        OperationManager.stellarium_server = stellarium_server
-

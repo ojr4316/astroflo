@@ -27,7 +27,7 @@ class Stars:
         start = time.time()
         print("Loading Tycho catalog...", end=' ')
         dir = os.path.dirname(os.path.abspath(__file__))
-        file = os.path.normpath(os.path.join(dir, 'tyc.fits'))
+        file = os.path.normpath(os.path.join(dir, '..', 'data', 'tyc.fits'))
         self.tycho = Table.read(file)
         print(f"Done in {time.time() - start:.2f} seconds")
 

@@ -2,15 +2,14 @@ import os
 import time
 import threading
 import matplotlib
+import matplotlib.pyplot as plt
 from pipeline import Astroflo
 from hardware.ui import UIManager, ScreenState
 from astronomy.telescope import Telescope
 from operation import OperationManager
 from capture.fake_camera import FakeCamera
 from solve.fake_solver import FakeSolver
-from operation import OperationManager
 from utils import is_pi
-import matplotlib.pyplot as plt
 
 # For Star Rendering, Windows really doesn't like Agg for multi-threading
 if os.name != 'nt':
@@ -54,7 +53,7 @@ def test_ui(flo: Astroflo, ui: UIManager):
     
 
 last_time = None
-def running(flo: Astroflo, ui: UIManager):
+def running(flo: Astroflo):
     global last_time
     now = time.perf_counter()
     delta = now - last_time if last_time is not None else 0
@@ -115,7 +114,7 @@ def main():
     else:
         try:
             while True:
-                running(flo, ui)
+                running(flo)
         except KeyboardInterrupt:
             flo.stop()
             ui_thread.join()

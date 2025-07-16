@@ -8,6 +8,7 @@ PORT = 10001
 
 class StellariumConnection:
     def __init__(self, host: str = HOST, port: int = PORT):
+        self.enabled = False
         self.host = host
         self.port = port
         self.server_thread = None
@@ -42,7 +43,7 @@ class StellariumConnection:
                 conn, addr = s.accept()
                 with conn:
                     print(f"Stellarium connected from {addr}")
-                    while True:
+                    while self.enabled:
                         if self.has_update:
                             self.has_update = False
                             self.send_position(conn, self.ra, self.dec)
@@ -55,7 +56,9 @@ class StellariumConnection:
     def run_server(self):
         self.server_thread = threading.Thread(target=self.server, daemon=True)
         self.server_thread.start()
+        self.enabled = True
     
     def stop_server(self):
-        self.server_thread.stop()
-                    
+        self.enabled = False
+        if self.server_thread is not None:
+            self.server_thread.join()

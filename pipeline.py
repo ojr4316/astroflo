@@ -157,7 +157,7 @@ class Astroflo:
             tra, tdec = brightest['RAdeg'], brightest['DEdeg']
             
             rotation_matrix = solve_rotation((ra, dec), (tra, tdec), roll)
-            scope.rotation_matrix = rotation_matrix
+            scope.set_rotation_matrix(rotation_matrix)
 
             print(f"Offsetting position to brightest nearby: {brightest['Name']} at RA: {tra}, DEC: {tdec}")
             print(f"Current position: RA: {ra}, DEC: {dec}")

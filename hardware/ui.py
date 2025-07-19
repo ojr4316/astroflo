@@ -271,23 +271,6 @@ class UIManager:
             return "far"
         else:
             return "distant"
-        
-    def shortest(self, current: float, target: float, directions: list[str]):
-        current %= 360
-        target %= 360
-        delta = abs(target - current) % 360
-        if delta == 0:
-            return ""
-        elif delta <= 180:
-            dist = round(delta, 2)
-            if directions[0] == "down":
-                dist *= -1
-            return f"{self.dist_word(dist)} {directions[0]}", dist
-        else:
-            dist = round(360 - delta, 2)
-            if directions[1] == "left":
-                dist *= -1
-            return f"{self.dist_word(dist)} {directions[1]}", dist
 
     def render_directions(self):
         if self.scope.position is None:
@@ -298,8 +281,8 @@ class UIManager:
             target_ra, target_dec = self.scope.target_manager.get_target_position()
             ra, dec = self.scope.get_position()
             north, east = distance_north_east(ra, dec, target_ra, target_dec, self.scope.viewing_angle)
-            north = f"{"Up" if north >= 0 else "Down"} {self.dist_word(north)} ({abs(north):.2f}°)"
-            east = f"{"Right" if east >= 0 else "Left"} {self.dist_word(east)} ({abs(east):.2f}°)"
+            north = ("Up" if north >= 0 else "Down") + f" {self.dist_word(north)} ({abs(north):.2f}°)"
+            east = ("Right" if east >= 0 else "Left") + f" {self.dist_word(east)} ({abs(east):.2f}°)"
 
             return self.renderer.render_many_text(['\n', 'CURRENT TARGET:', target_name, '\n', north, '\n', east, '\n', f"Last Solve: {(time.time()-self.pipeline.latest_timestamp):.1f}s"])
         return self.renderer.render_many_text(["No target set."])

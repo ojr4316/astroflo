@@ -96,7 +96,7 @@ def main():
     )
 
     #try_set_planet(scope, "Jupiter")
-    try_set_target(scope, "Alshain")
+    try_set_target(scope, "Altair")
     solver = build_solver()
     cam = build_camera()
 

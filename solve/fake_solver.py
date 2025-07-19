@@ -8,14 +8,16 @@ polaris_wrong = (22.81894, 88.6517) # nearby bright star, testing cam offset
 
 vega = (279.24372, 38.7861)
 altair = (297.70505, 8.8712)
+altair_off = (294.70505, 7.7712)
 mizar = (200.98349, 54.9302)
+alkaid = (206.88404, 49.3178)
 
 s = (2.33984, -1.4648)
 c = (17.15721, -5.3056)
 
 class FakeSolver(Solver):
     
-    target = altair
+    target = altair_off
 
     def solve(self, image):
         time.sleep(0.3)

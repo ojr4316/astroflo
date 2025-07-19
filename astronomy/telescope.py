@@ -8,6 +8,10 @@ from astronomy.settings import TelescopeSettings
 from astronomy.renderer import NavigationStarfield
 from operation import OperationManager
 from utils import apply_rotation
+import os
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+OFFSET_FILE = os.path.join(BASE_DIR, "..", "offset.npy")
 
 rochesterLat = 43.1566
 rochesterLong = -77.6088
@@ -43,7 +47,17 @@ class Telescope:
         
         self.timescale = load.timescale()
         self.time = self.timescale.now() #self.timescale.utc(2025, 3, 21, 2, 0, 0)
-        
+
+        if os.path.exists(OFFSET_FILE):
+            print("loading previously set offsets")
+            offsets = np.load(OFFSET_FILE)
+            print(offsets)
+            self.rotation_matrix = offsets
+    
+    def set_rotation_matrix(self, matrix):
+        self.rotation_matrix = matrix
+        np.save(OFFSET_FILE, matrix)
+
     def set_time(self, time):
         self.time = self.timescale.utc(time)
 

@@ -7,6 +7,7 @@ from skyfield.api import load
 from astronomy.settings import TelescopeSettings
 from astronomy.renderer import NavigationStarfield
 from operation import OperationManager
+from utils import apply_rotation
 
 rochesterLat = 43.1566
 rochesterLong = -77.6088
@@ -26,8 +27,10 @@ class Telescope:
         self.mount_position = None # RA/DEC camera position
         self.position = None # RA/DEC offset by camera
         self.last_position = None
-        self.camera_offset = (0, 0)
-        self.viewing_angle = 0 # 0-359deg
+        self.camera_offset = (0, 0) # TODO: remove, outdated
+        self.rotation_matrix = None
+
+        self.viewing_angle = 0 # 0-359deg, oriented towards NORTH
 
         # above settings managed by TelescopeSettings
         self.settings = TelescopeSettings(self)
@@ -74,8 +77,8 @@ class Telescope:
     def solve_result(self, ra: float, dec: float, roll: float = 0):
         self.mount_position = (ra, dec)
         self.viewing_angle = roll
-        ra += self.camera_offset[0]
-        dec += self.camera_offset[1]
+        if self.rotation_matrix is not None:
+            ra, dec = apply_rotation(self.rotation_matrix, ra, dec, roll)
 
         if self.last_position is not None:
             self.speed = ((ra - self.last_position[0]) ** 2 + (dec - self.last_position[1]) ** 2) ** 0.5

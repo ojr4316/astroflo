@@ -10,6 +10,7 @@ from hardware.display import ScreenRenderer
 from hardware.input import Input
 from hardware.screen import Screen
 from pipeline import Astroflo
+from utils import distance_north_east
 
 class ScreenState(Enum):
     MAIN_MENU = 0
@@ -296,10 +297,11 @@ class UIManager:
             target_name = self.scope.target_manager.name
             target_ra, target_dec = self.scope.target_manager.get_target_position()
             ra, dec = self.scope.get_position()
-            x, xdist = self.shortest(ra, target_ra, ["right", "left"])
-            y, ydist = self.shortest(dec, target_dec, ["up", "down"])
+            north, east = distance_north_east(ra, dec, target_ra, target_dec, self.scope.viewing_angle)
+            north = f"{"Up" if north >= 0 else "Down"} {self.dist_word(north)} ({abs(north):.2f}°)"
+            east = f"{"Right" if east >= 0 else "Left"} {self.dist_word(east)} ({abs(east):.2f}°)"
 
-            return self.renderer.render_many_text(['\n', 'CURRENT TARGET:', target_name, '\n', x.upper(), '\n', y.upper(), '\n', "Distance:", f"{xdist}, {ydist}", f"Last Solve: {(time.time()-self.pipeline.latest_timestamp):.1f}s"])
+            return self.renderer.render_many_text(['\n', 'CURRENT TARGET:', target_name, '\n', north, '\n', east, '\n', f"Last Solve: {(time.time()-self.pipeline.latest_timestamp):.1f}s"])
         return self.renderer.render_many_text(["No target set."])
 
     def render(self):

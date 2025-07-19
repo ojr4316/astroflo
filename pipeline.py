@@ -9,7 +9,7 @@ from astronomy.stellarium import StellariumConnection
 from astronomy.analyze import ImageAnalysis
 from operation import OperationManager
 from capture.adjuster import Adjuster
-
+from utils import solve_rotation
 
 MIN_MAG_TO_OFFSET = 5
 
@@ -132,7 +132,8 @@ class Astroflo:
         if scope.mount_position is None:
             print("FAIL: Telescope position is not set.")
             return
-        ra, dec = scope.mount_position 
+        ra, dec = scope.mount_position
+        roll = scope.viewing_angle
 
         stars = scope.target_manager.stars
         r = stars.radius_from_telescope(self.scope.focal_length, self.scope.eyepiece, self.scope.eyepiece_fov) * 10
@@ -154,12 +155,13 @@ class Astroflo:
                 return
 
             tra, tdec = brightest['RAdeg'], brightest['DEdeg']
-            x_offset = tra - ra
-            y_offset = tdec - dec
+            
+            rotation_matrix = solve_rotation((ra, dec), (tra, tdec), roll)
+            scope.rotation_matrix = rotation_matrix
+
             print(f"Offsetting position to brightest nearby: {brightest['Name']} at RA: {tra}, DEC: {tdec}")
             print(f"Current position: RA: {ra}, DEC: {dec}")
-            scope.set_camera_offset(x_offset, y_offset)
-            print(scope.camera_offset)
+            
         
     def stop_configuring(self):
         self.configuring = False

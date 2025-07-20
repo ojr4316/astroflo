@@ -1,12 +1,10 @@
 """ State Manager for UI, Controls creating and rendering images, and managing input """
 import time
 import os
-from enum import Enum
 from hardware.renderer import ScreenRenderer
 from hardware.input import Input
 from hardware.adafruit_tft_bonnet import AdafruitTFTBonnet
 
-from hardware.screens.screen import Screen
 from hardware.screens.debug_software import DebugSoftware
 from hardware.screens.debug_hardware import DebugHardware
 from hardware.screens.main_menu import MainMenu

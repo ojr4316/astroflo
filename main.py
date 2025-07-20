@@ -108,7 +108,7 @@ def main():
     flo.start()
 
     ui.init_pipeline(flo)
-    ui.state = ScreenState.DIRECTION
+    ui.change_screen(ScreenState.MAIN_MENU)
     if OperationManager.render_test:
         test_ui(flo, ui)
     else:

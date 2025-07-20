@@ -1,43 +1,10 @@
 """ Basic Input Manager for 1.3" Adafruit TFT Bonnet """
 class Input:
 
-    controls = {
-        'A': {
-            "state": False,
-            "press": None,
-            "release": None
-        },
-        'B': {
-            "state": False,
-            "press": None,
-            "release": None
-        },
-        'L': {
-            "state": False,
-            "press": None,
-            "release": None
-        },
-        'R': {
-            "state": False,
-            "press": None,
-            "release": None
-        },
-        'U': {
-            "state": False,
-            "press": None,
-            "release": None
-        },
-        'D': {
-            "state": False,
-            "press": None,
-            "release": None
-        },
-        'C': {
-            "state": False,
-            "press": None,
-            "release": None
-        }
-    }
+    controls = {}
+
+    def __init__(self):
+        self.reset()
 
     def handle(self, control, value):
         if control["press"] is not None and not control["state"] and value: # Pressed
@@ -55,3 +22,42 @@ class Input:
         self.handle(ct['U'], u)
         self.handle(ct['D'], d)
         self.handle(ct['C'], c)
+
+    def reset(self):
+        self.controls = {
+            'A': {
+                "state": False,
+                "press": None,
+                "release": None
+            },
+            'B': {
+                "state": False,
+                "press": None,
+                "release": None
+            },
+            'L': {
+                "state": False,
+                "press": None,
+                "release": None
+            },
+            'R': {
+                "state": False,
+                "press": None,
+                "release": None
+            },
+            'U': {
+                "state": False,
+                "press": None,
+                "release": None
+            },
+            'D': {
+                "state": False,
+                "press": None,
+                "release": None
+            },
+            'C': {
+                "state": False,
+                "press": None,
+                "release": None
+            }
+        }

@@ -42,7 +42,12 @@ class UIManager:
         }
 
     def change_screen(self, screen: ScreenState):
+        self.input.reset()
         self.state = screen
+        self.pipeline.configuring = False
+        self.screens[self.state].setup_input()
+        
+        time.sleep(0.5) # prevent multiple page changes
 
     def render(self):
         match(self.state):
@@ -57,7 +62,7 @@ class UIManager:
 
     def loop(self):
         if self.pipeline == None:
-            time.sleep(0.2)
+            time.sleep(0.25)
             self.loop()
             return
         if os.name == 'nt' or os.uname().nodename != "rpi":

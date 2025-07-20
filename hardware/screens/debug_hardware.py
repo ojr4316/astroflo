@@ -1,7 +1,20 @@
 from PIL import Image
 from hardware.screens.screen import Screen
+from hardware.state import ScreenState
 
 class DebugHardware(Screen):
+
+    def setup_input(self):
+        self.pipeline.configuring = True # enable camera capture, no solve
+        
+        self.screen_input.controls['A']["press"] = self.select
+        self.screen_input.controls['B']["press"] = self.alt_select
+
+    def select(self):
+        self.ui.change_screen(ScreenState.NAVIGATE)
+
+    def alt_select(self):
+        self.ui.change_screen(ScreenState.MAIN_MENU)
 
     def render(self):
         if not self.pipeline.configuring:

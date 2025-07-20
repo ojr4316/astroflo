@@ -1,5 +1,5 @@
 from hardware.screens.screen import Screen
-from hardware.ui import ScreenState
+from hardware.state import ScreenState
 
 class MainMenu(Screen):
 

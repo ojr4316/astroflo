@@ -12,15 +12,7 @@ from hardware.screens.debug_hardware import DebugHardware
 from hardware.screens.main_menu import MainMenu
 from hardware.screens.navigation import NavigationScreen
 from hardware.screens.directions import DirectionsScreen
-
-class ScreenState(Enum):
-    MAIN_MENU = 0
-    DEBUG_SOFTWARE = 1
-    DEBUG_HARDWARE = 2
-    TARGET_SELECT = 3
-    TARGET_LIST = 4
-    DIRECTION = 5
-    NAVIGATE = 6
+from hardware.state import ScreenState
 
 init_text = ['\n', '\n', "~ ASTROFLO ~", "Calibrating camera", "and loading modified", "Tycho catalog.", '\n', '\n', "Please wait 5-10 seconds"]
 

@@ -2,12 +2,11 @@ import numpy as np
 from astronomy.target import TargetManager
 from astropy.coordinates import EarthLocation
 import astropy.units as u
-from starplot.optics import Reflector, Optic
 from skyfield.api import load
 from astronomy.settings import TelescopeSettings
 from astronomy.renderer import NavigationStarfield
 from operation import OperationManager
-from utils import apply_rotation
+from utils import apply_rotation, solve_rotation
 import os
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -78,9 +77,6 @@ class Telescope:
         light_pollution_offset = 1 # TODO: Make this more dynamic or remove. But currently is too generous
         return (2 + 5 * np.log10(self.aperture)) - light_pollution_offset - (self.zoom/2)
     
-    def optic(self) -> Optic:
-        return Reflector(self.focal_length, self.eyepiece, self.eyepiece_fov + 10) # raise to better match stellarium
-
     def set_camera_offset(self, x: float, y: float):
         self.camera_offset = (x, y)
         self.settings.save()
@@ -103,14 +99,6 @@ class Telescope:
         if OperationManager.log_coordinates:
             self.settings.save_coord()
 
-    def modify(self, idx, increase=False): # Telescope Settings Page, TODO: Maybe modify UI interally to adjust values
-        match(idx):
-            case 0: self.aperture += (1 if increase else -1)
-            case 1: self.focal_length += (1 if increase else -1)
-            case 2: self.eyepiece += (1 if increase else -1)
-            case 3: self.eyepiece_fov += (1 if increase else -1)
-        self.settings.save()
-
     def sky_drift(self, t=1):
         if self.position == None:
             return
@@ -118,4 +106,36 @@ class Telescope:
         ra_offset = (15 * np.cos(dec)) * t / (60*60) # Sky Drift, scaled by time, to hours
         new_ra = ra + ra_offset
         self.position = (new_ra, dec)
-        
+    
+    def offset_to_brightest(self, min_mag=6, fov_multiplier=10) -> bool:
+        if self.mount_position is None:
+            print("FAIL: Telescope position is not set")
+            return False
+        ra, dec = self.mount_position
+        roll = self.viewing_angle
+
+        stars = self.target_manager.stars
+        r = stars.radius_from_telescope(self.focal_length, self.eyepiece, self.eyepiece_fov) * fov_multiplier
+        nearby = stars.search_by_coordinate(ra=ra, dec=dec, radius=r)
+        if len(nearby) == 0:
+            print("FAIL: No nearby stars")
+            return False
+        else:
+            brightest = nearby[0]
+            for s in nearby:
+                if s['Vmag'] < brightest['Vmag']: # TODO: fix for negative amgs
+                    brightest = s
+            
+            if brightest['Vmag'] > min_mag:
+                print("FAIL: No bright star nearby")
+                return False
+
+            tra, tdec = brightest['RAdeg'], brightest['DEdeg']
+            
+            rotation_matrix = solve_rotation((ra, dec), (tra, tdec), roll)
+            self.set_rotation_matrix(rotation_matrix)
+
+            print(f"Offsetting position to brightest nearby: {brightest['Name']} at RA: {tra}, DEC: {tdec}")
+            print(f"Current position: RA: {ra}, DEC: {dec}")
+            return True
+            

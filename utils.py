@@ -119,3 +119,14 @@ def distance_north_east(current_ra: float, current_dec: float, target_ra: float,
     east_rotated = sin_roll * north_raw + cos_roll * east_raw
     
     return north_rotated, east_rotated
+
+def distance_descriptor(dist: float):
+        dist = abs(dist)
+        if dist < 1:
+            return "nearby"
+        elif dist < 20:
+            return "close"
+        elif dist < 80:
+            return "far"
+        else:
+            return "distant"

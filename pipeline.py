@@ -11,8 +11,6 @@ from operation import OperationManager
 from capture.adjuster import Adjuster
 from utils import solve_rotation
 
-MIN_MAG_TO_OFFSET = 5
-
 class Astroflo:
 
     capturer: Camera = None
@@ -126,42 +124,6 @@ class Astroflo:
             self.stellarium.update_position(ra, dec)
         if OperationManager.dynamic_adjust:
             self.adjuster.success()
-
-    def offset_pos_to_brightest_nearby(self):
-        scope = self.scope
-        if scope.mount_position is None:
-            print("FAIL: Telescope position is not set.")
-            return
-        ra, dec = scope.mount_position
-        roll = scope.viewing_angle
-
-        stars = scope.target_manager.stars
-        r = stars.radius_from_telescope(self.scope.focal_length, self.scope.eyepiece, self.scope.eyepiece_fov) * 10
-        nearby = stars.search_by_coordinate(ra=ra, dec=dec, radius=r)
-        #for s in nearby: 
-        #   print(s)
-        if len(nearby) == 0:
-            print("FAIL")
-            return
-        else:
-            brightest = nearby[0]
-            #print(brightest)
-            for s in nearby:
-                if s['Vmag'] < brightest['Vmag']: # TODO: fix for negative amgs
-                    brightest = s
-            
-            if brightest['Vmag'] > MIN_MAG_TO_OFFSET:
-                print("No bright star nearby")
-                return
-
-            tra, tdec = brightest['RAdeg'], brightest['DEdeg']
-            
-            rotation_matrix = solve_rotation((ra, dec), (tra, tdec), roll)
-            scope.set_rotation_matrix(rotation_matrix)
-
-            print(f"Offsetting position to brightest nearby: {brightest['Name']} at RA: {tra}, DEC: {tdec}")
-            print(f"Current position: RA: {ra}, DEC: {dec}")
-            
         
     def stop_configuring(self):
         self.configuring = False

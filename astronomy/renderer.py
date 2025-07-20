@@ -112,7 +112,7 @@ class NavigationStarfield:
                 
                 max_arrow_len = image_size // 2 - 10
                 end_x = center_x + x_dir * max_arrow_len
-                end_y = center_y + y_dir * max_arrow_len
+                end_y = center_y - y_dir * max_arrow_len
 
                 color = (255, 0, 0, 100)
                 draw.line((center_x, center_y, end_x, end_y), fill=color, width=3)

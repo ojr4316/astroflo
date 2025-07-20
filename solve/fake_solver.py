@@ -12,12 +12,14 @@ altair_off = (294.70505, 7.7712)
 mizar = (200.98349, 54.9302)
 alkaid = (206.88404, 49.3178)
 
+pleiades = (56.74689, 24.1160)
+
 s = (2.33984, -1.4648)
 c = (17.15721, -5.3056)
 
 class FakeSolver(Solver):
     
-    target = altair_off
+    target = pleiades
 
     def solve(self, image):
         time.sleep(0.3)

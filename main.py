@@ -95,8 +95,8 @@ def main():
         eyepiece_fov=40,
     )
 
-    #try_set_planet(scope, "Jupiter")
-    try_set_target(scope, "Altair")
+    try_set_planet(scope, "Uranus")
+    #try_set_target(scope, "Altair")
     solver = build_solver()
     cam = build_camera()
 

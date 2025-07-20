@@ -131,7 +131,7 @@ class Stars:
         
         return results
 
-    def render_view(self, projected):
+    def render_view(self, projected, zoom=1):
         with self._render_lock:
             fig, ax = plt.subplots()
             fig.set_facecolor('black')
@@ -165,13 +165,13 @@ class Stars:
                         labeled_positions.add(label_pos)
                 else:
                     # Render stars normally
-                    size = min(max(1, 25 - mag*2), 15)
+                    size = min(max(1, 25 - mag*2), 15)/(1 if zoom == 1 else (zoom*2 if zoom < 1 else zoom/2))
                     ax.plot(x, y, 'o', markersize=size, color='white')
                     
                     # Label bright stars
                     label_pos = (round(x + 0.03, 1), round(y, 1))
                     name = str(obj['Name']).strip().replace("--", "").upper()
-                    if mag < 10 and label_pos not in labeled_positions and len(name) > 0:
+                    if mag < 6 and label_pos not in labeled_positions and len(name) > 0:
                         ax.text(*label_pos, name, color='orange', fontsize=15, clip_on=True, fontweight='bold')
                         labeled_positions.add(label_pos)
 

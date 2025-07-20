@@ -75,7 +75,7 @@ class Telescope:
          # https://www.rocketmime.com/astronomy/Telescope/MagnitudeGain.html
 
         light_pollution_offset = 1 # TODO: Make this more dynamic or remove. But currently is too generous
-        return (2 + 5 * np.log10(self.aperture)) - light_pollution_offset - (self.zoom/3)
+        return (2 + 5 * np.log10(self.aperture)) - light_pollution_offset - (self.zoom/4)
     
     def set_camera_offset(self, x: float, y: float):
         self.camera_offset = (x, y)

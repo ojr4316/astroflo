@@ -27,7 +27,7 @@ class NavigationStarfield:
             if brightest is None or star['Vmag'] < brightest['Vmag']:
                 brightest = star
         projected = self.stars.project_to_view(nearby, center_ra=ra, center_dec=dec, radius_deg=r, rotation=self.scope.viewing_angle)
-        return self.stars.render_view(projected), str(brightest['Name']) if brightest else "--"
+        return self.stars.render_view(projected, self.scope.zoom), str(brightest['Name']) if brightest else "--"
                         
     def project_target_to_view(self, target_ra, target_dec, center_ra, center_dec, radius_deg, rotation=0):
         ra0 = np.radians(center_ra)

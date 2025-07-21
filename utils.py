@@ -3,6 +3,9 @@ import io
 import numpy as np
 from typing import Tuple
 from PIL import Image
+from astropy.coordinates import SkyCoord, AltAz, EarthLocation
+from astropy.time import Time
+import astropy.units as u
 
 def is_pi() -> bool:
     return os.name != 'nt' and os.uname().nodename == "rpi"
@@ -130,3 +133,17 @@ def distance_descriptor(dist: float):
             return "far"
         else:
             return "distant"
+
+def radec_to_altaz(ra: float, dec: float, time: Time, location: EarthLocation) -> Tuple[float, float]:
+    coord = SkyCoord(ra=ra*u.deg, dec=dec*u.deg, frame='icrs')
+    altaz_frame = AltAz(obstime=time, location=location)
+    altaz_coord = coord.transform_to(altaz_frame)
+    
+    return altaz_coord.alt.deg, altaz_coord.az.deg
+
+def altaz_to_radec(alt: float, az: float, time: Time, location: EarthLocation) -> Tuple[float, float]:
+    altaz_frame = AltAz(obstime=time, location=location)
+    coord = SkyCoord(alt=alt*u.deg, az=az*u.deg, frame=altaz_frame)
+    icrs_coord = coord.transform_to('icrs')
+    
+    return icrs_coord.ra.deg, icrs_coord.dec.deg

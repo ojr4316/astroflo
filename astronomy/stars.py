@@ -50,12 +50,15 @@ class Stars:
             combined_results = []
             
             for star in star_results:
+                is_planet = False
+                if star['TYC'] is not None and len(star['TYC']) == 2:
+                    is_planet = True
                 combined_results.append({
                     'Name': star['Name'],
                     'RAdeg': star['RAdeg'],
                     'DEdeg': star['DEdeg'],
                     'Vmag': star['Vmag'],
-                    'is_planet': False
+                    'is_planet': is_planet
                 })
             
             for planet in planets_in_fov:

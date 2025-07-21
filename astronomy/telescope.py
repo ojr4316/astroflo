@@ -6,7 +6,7 @@ from skyfield.api import load
 from astronomy.settings import TelescopeSettings
 from astronomy.renderer import NavigationStarfield
 from operation import OperationManager
-from utils import apply_rotation, solve_rotation
+from utils import apply_rotation, solve_rotation, radec_to_altaz, altaz_to_radec
 import os
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -30,7 +30,7 @@ class Telescope:
         self.mount_position = None # RA/DEC camera position
         self.position = None # RA/DEC offset by camera
         self.last_position = None
-        self.camera_offset = (0, 0) # TODO: remove, outdated
+        self.camera_offset = None
         self.rotation_matrix = None
 
         self.viewing_angle = 0 # 0-359deg, oriented towards NORTH
@@ -89,6 +89,11 @@ class Telescope:
         self.viewing_angle = roll
         if self.rotation_matrix is not None:
             ra, dec = apply_rotation(self.rotation_matrix, ra, dec, roll)
+        if self.camera_offset is not None:
+            alt, az = radec_to_altaz(ra, dec, self.get_time(), self.location)
+            alt += self.camera_offset[1]
+            az += self.camera_offset[0]
+            ra, dec = altaz_to_radec(alt, az, self.get_time(), self.location)
 
         if self.last_position is not None:
             self.speed = ((ra - self.last_position[0]) ** 2 + (dec - self.last_position[1]) ** 2) ** 0.5
@@ -112,6 +117,7 @@ class Telescope:
             print("FAIL: Telescope position is not set")
             return False
         ra, dec = self.mount_position
+        alt, az = radec_to_altaz(ra, dec, self.get_time(), self.location)
         roll = self.viewing_angle
 
         stars = self.target_manager.stars
@@ -131,11 +137,20 @@ class Telescope:
                 return False
 
             tra, tdec = brightest['RAdeg'], brightest['DEdeg']
+            talt, taz = radec_to_altaz(tra, tdec, self.get_time(), self.location)
+
             
-            rotation_matrix = solve_rotation((ra, dec), (tra, tdec), roll)
-            self.set_rotation_matrix(rotation_matrix)
+            x_offset = taz - az
+            y_offset = talt - alt
+
+            self.set_camera_offset(x_offset, y_offset)
+
+            #rotation_matrix = solve_rotation((ra, dec), (tra, tdec), roll)
+            #self.set_rotation_matrix(rotation_matrix)
 
             print(f"Offsetting position to brightest nearby: {brightest['Name']} at RA: {tra}, DEC: {tdec}")
             print(f"Current position: RA: {ra}, DEC: {dec}")
+            print("Found offsets:", x_offset, y_offset)
+
             return True
             

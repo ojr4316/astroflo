@@ -14,7 +14,7 @@ class DebugHardware(Screen):
         self.ui.change_screen(ScreenState.NAVIGATE)
 
     def alt_select(self):
-        self.ui.change_screen(ScreenState.MAIN_MENU)
+        self.ui.change_screen(ScreenState.DEBUG_SOFTWARE)
 
     def render(self):
         if not self.pipeline.configuring:

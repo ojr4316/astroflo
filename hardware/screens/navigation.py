@@ -30,7 +30,7 @@ class NavigationScreen(Screen):
         self.ui.change_screen(ScreenState.DEBUG_HARDWARE)
 
     def select(self):
-        self.pipeline.scope.offset_to_brightest()
+        self.pipeline.find_target_pixel()
 
     def render(self):
         pipeline = self.pipeline

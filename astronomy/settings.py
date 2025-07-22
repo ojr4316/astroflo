@@ -34,7 +34,7 @@ class TelescopeSettings:
         self.scope.focal_length = int(settings["focal_length"])
         self.scope.eyepiece = int(settings["eyepiece"])
         self.scope.eyepiece_fov = int(settings["eyepiece_fov"])
-        self.scope.camera_offset = (float(settings["x_offset"]), float(settings["y_offset"]))
+        #self.scope.camera_offset = (float(settings["x_offset"]), float(settings["y_offset"]))
         self.scope.viewing_angle = float(settings["view_angle"])
         print(f"Settings loaded from {SETTINGS_FILE}")
 

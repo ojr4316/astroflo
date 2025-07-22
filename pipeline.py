@@ -129,4 +129,10 @@ class Astroflo:
         self.configuring = False
         self.latest_image = None
 
-
+    def find_target_pixel(self) -> bool:
+        brightest_pixel, brightest_value = self.analysis.find_brightest(self.latest_image)
+        if brightest_pixel is not None:
+            print("Brightest pixel:", brightest_pixel, "Value:", brightest_value)
+            self.solver.target_pixel = brightest_pixel
+            return True
+        return False

@@ -38,7 +38,7 @@ class Tetra3Solver(Solver):
             #image, offsets = processed
             
             centroids = self.cedar_detect.extract_centroids(image, sigma=8, use_binned=True)
-            result = self.t3.solve_from_centroids(centroids, fov_estimate=self.fov, size=(image.shape[1], image.shape[0])) # much faster than using Image
+            result = self.t3.solve_from_centroids(centroids, fov_estimate=self.fov, size=(image.shape[1], image.shape[0]), target_pixel=self.target_pixel) # much faster than using Image
             #result = self.t3.solve_from_image(Image.fromarray(image), fov_estimate=self.fov, fov_max_error=1, pattern_checking_stars=20)
 
             ra = result['RA']

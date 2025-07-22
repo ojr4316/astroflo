@@ -87,13 +87,6 @@ class Telescope:
     def solve_result(self, ra: float, dec: float, roll: float = 0):
         self.mount_position = (ra, dec)
         self.viewing_angle = roll
-        if self.rotation_matrix is not None:
-            ra, dec = apply_rotation(self.rotation_matrix, ra, dec, roll)
-        if self.camera_offset is not None:
-            alt, az = radec_to_altaz(ra, dec, self.get_time(), self.location)
-            alt += self.camera_offset[1]
-            az += self.camera_offset[0]
-            ra, dec = altaz_to_radec(alt, az, self.get_time(), self.location)
 
         if self.last_position is not None:
             self.speed = ((ra - self.last_position[0]) ** 2 + (dec - self.last_position[1]) ** 2) ** 0.5

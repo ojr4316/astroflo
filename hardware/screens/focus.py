@@ -14,11 +14,9 @@ class FocusScreen(Screen):
         self.ui.change_screen(ScreenState.NAVIGATE)
 
     def alt_select(self):
-        self.ui.change_screen(ScreenState.DEBUG_SOFTWARE)
+        self.ui.change_screen(ScreenState.MAIN_MENU)
 
     def render(self):
-        if not self.pipeline.configuring:
-            self.pipeline.configuring = True
         if self.pipeline.latest_image is None:
             return self.renderer.render_many_text(["Waiting for first image..."])
         fwhm = self.pipeline.analysis.fwhm_values[-1]  if len(self.pipeline.analysis.fwhm_values) > 0 else 1000

@@ -3,6 +3,7 @@ import os
 from skyfield.api import wgs84, load
 from skyfield.positionlib import ICRF
 import time
+from utils import is_within_radius
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ephemeris_file = os.path.join(BASE_DIR, "..", 'data', "de440s.bsp")
@@ -34,6 +35,8 @@ class Ephemeris:
         self.names = ["MERCURY", "VENUS", "MARS", "JUPITER", "SATURN", "URANUS", "NEPTUNE", "PLUTO", "SUN", "MOON"]
         self.time = time
         self.planet_cache = {}
+        self.cache_time = None
+        self.cache_duration = 5  # 5 seconds
         if self.time is None:
             self.time = self.timescale.now()
 
@@ -138,7 +141,7 @@ class Ephemeris:
         planets_in_fov = []
         
         for planet_name, planet_data in self.planet_cache.items():
-            if self.is_within_radius(ra, dec, planet_data['RAdeg'], planet_data['DEdeg'], radius):
+            if is_within_radius(ra, dec, planet_data['RAdeg'], planet_data['DEdeg'], radius):
                 planets_in_fov.append(planet_data)
         
         return planets_in_fov

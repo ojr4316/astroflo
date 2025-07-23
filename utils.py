@@ -147,3 +147,15 @@ def altaz_to_radec(alt: float, az: float, time: Time, location: EarthLocation) -
     icrs_coord = coord.transform_to('icrs')
     
     return icrs_coord.ra.deg, icrs_coord.dec.deg
+
+def is_within_radius(center_ra, center_dec, target_ra, target_dec, radius): # distance with haversine formula
+    radius_rad = np.radians(radius)
+    delta_ra = np.radians(target_ra - center_ra)
+    delta_dec = np.radians(target_dec - center_dec)
+        
+    a = (np.sin(delta_dec / 2) ** 2 +
+     np.cos(np.radians(center_dec)) * np.cos(np.radians(target_dec)) *
+     np.sin(delta_ra / 2) ** 2)
+    distance_rad = 2 * np.arcsin(np.sqrt(a))
+        
+    return distance_rad <= radius_rad

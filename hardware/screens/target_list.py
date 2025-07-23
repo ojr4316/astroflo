@@ -23,20 +23,20 @@ class TargetList(Screen):
         self.screen_input.controls['R']["press"] = self.up
         self.screen_input.controls['L']["press"] = self.down
 
-        self.screen_input.controls['U']["press"] = self.previous
-        self.screen_input.controls['D']["press"] = self.next
+        self.screen_input.controls['U']["press"] = self.decrease
+        self.screen_input.controls['D']["press"] = self.increase
 
         self.screen_input.controls['A']["press"] = self.select
         self.screen_input.controls['B']["press"] = self.alt_select
 
-    def previous(self):
+    def up(self):
         if self.selected_y > 0:
             self.selected_y -= 1
         else:
             self.selected_y = self.max_y
         self.build_options()
 
-    def next(self):
+    def down(self):
         if self.selected_y < self.max_y:
             self.selected_y += 1
         else:
@@ -57,13 +57,13 @@ class TargetList(Screen):
     def render(self):
         return self.renderer.render_menu(f"{self.title} ({self.mag_limit}|{not self.only_dsos})", self.names, self.selected_y)
     
-    def up(self):        
+    def increase(self):        
         if self.mag_limit < 10:
             self.mag_limit += 0.5
         else:
             self.mag_limit = 10
 
-    def down(self):
+    def decrease(self):
         if self.mag_limit >= 0.5:
             self.mag_limit -= 0.5
         else:

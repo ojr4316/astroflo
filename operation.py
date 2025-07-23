@@ -17,4 +17,4 @@ class OperationManager:
     use_real_solver: bool = False # use astrometric solver on images
     dynamic_adjust: bool = False # Dynamically adjust exposure based on success rate
 
-    render_test: bool = True # open preview of display
+    render_test: bool = False # open preview of display

@@ -29,10 +29,10 @@ class NavigationScreen(Screen):
             self.pipeline.scope.zoom = 20
 
     def alt_select(self):
-        self.ui.change_screen(ScreenState.DIRECTIONS)
+        self.ui.change_screen(ScreenState.MAIN_MENU)
 
     def select(self):
-        self.pipeline.find_target_pixel()
+        self.ui.change_screen(ScreenState.DIRECTIONS)
 
     def render(self):
         pipeline = self.pipeline

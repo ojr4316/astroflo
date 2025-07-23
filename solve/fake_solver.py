@@ -20,7 +20,7 @@ c = (17.15721, -5.3056)
 class FakeSolver(Solver):
     
     target = pleiades
-
+    
     def solve(self, image):
         time.sleep(0.3)
         #self.target = (self.target[0] - 0.1, self.target[1] + 0.3)

@@ -9,7 +9,7 @@ from utils import plt_to_img
 import threading
 import pandas
 from skyfield.api import Angle
-from utils import radec_to_altaz
+from utils import is_within_radius
 
 def clean(n) -> str:
     if n is np.ma.masked:
@@ -21,9 +21,6 @@ def clean(n) -> str:
 class Stars:
     def __init__(self, ephemeris):
         self.ephemeris = ephemeris
-        self.planet_cache = {}
-        self.cache_time = None
-        self.cache_duration = 5  # 5 seconds
         self._render_lock = threading.Lock()
         start = time.time()
         print("Loading Tycho catalog...", end=' ')
@@ -41,7 +38,7 @@ class Stars:
         return results
 
     def search_by_coordinate(self, ra: float, dec: float, radius: float = 0.05, mag_limit: float = 13): # FOV in degrees
-        within_radius = self.is_within_radius(ra, dec, self.tycho['RAdeg'], self.tycho['DEdeg'], radius)
+        within_radius = is_within_radius(ra, dec, self.tycho['RAdeg'], self.tycho['DEdeg'], radius)
         star_results = self.tycho[within_radius]
         star_results = star_results[star_results['Vmag'] <= mag_limit]
 
@@ -184,15 +181,3 @@ class Stars:
             plt.axis('off')
             matplotlib.pyplot.close()
             return plt_to_img(fig)
-    
-    def is_within_radius(self, center_ra, center_dec, target_ra, target_dec, radius): # distance with haversine formula
-        radius_rad = np.radians(radius)
-        delta_ra = np.radians(target_ra - center_ra)
-        delta_dec = np.radians(target_dec - center_dec)
-        
-        a = (np.sin(delta_dec / 2) ** 2 +
-             np.cos(np.radians(center_dec)) * np.cos(np.radians(target_dec)) *
-             np.sin(delta_ra / 2) ** 2)
-        distance_rad = 2 * np.arcsin(np.sqrt(a))
-        
-        return distance_rad <= radius_rad

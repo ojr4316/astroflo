@@ -49,7 +49,10 @@ class UIManager:
         self.input.reset()
         self.state = screen
         self.screens[self.state].setup_input()
-        
+        match(screen):
+            case ScreenState.NAVIGATE: self.pipeline.mode = 0
+            case ScreenState.FOCUS: self.pipeline.mode = 1
+            case ScreenState.ALIGNMENT: self.pipeline.mode = 2
         time.sleep(0.5) # prevent multiple page changes
 
     def render(self):
@@ -59,7 +62,7 @@ class UIManager:
         self.screen.handle_input(self.input)
 
     def loop(self):
-        if self.pipeline == None:
+        if self.pipeline == None or len(self.screens) == 0:
             time.sleep(0.25)
             self.loop()
             return

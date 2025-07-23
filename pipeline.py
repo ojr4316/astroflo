@@ -150,7 +150,7 @@ class Astroflo:
         self.mode = PipelineMode.NAVIGATE
         self.latest_image = None
 
-    def find_target_pixel(self) -> bool:
+    def find_target_pixel(self):
         if self.mode != PipelineMode.ALIGN or self.latest_image is None:
             print("Pipeline is not in ALIGN mode, or has not captured an image yet.")
             return False
@@ -158,5 +158,5 @@ class Astroflo:
         if brightest_pixel is not None:
             print("Brightest pixel:", brightest_pixel, "Value:", brightest_value)
             self.solver.target_pixel = brightest_pixel
-            return True
-        return False
+            return brightest_pixel
+        return None

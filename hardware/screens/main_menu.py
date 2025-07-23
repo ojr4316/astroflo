@@ -21,7 +21,7 @@ class MainMenu(Screen):
         match self.selected_y:
             case 0: self.ui.change_screen(ScreenState.FOCUS)
             case 1: self.ui.change_screen(ScreenState.ALIGNMENT)
-            case 2: self.ui.change_screen(ScreenState.TARGET_SELECT)
+            case 2: self.ui.change_screen(ScreenState.TARGET_LIST)
             case 3: self.ui.change_screen(ScreenState.NAVIGATE)
 
     def alt_select(self):

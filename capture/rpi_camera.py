@@ -5,6 +5,7 @@ from operation import OperationManager
 from PIL import Image
 import numpy as np
 
+square = (512, 512)
 low_res = (640, 480)
 high_res = (4056, 3040)
 
@@ -14,7 +15,7 @@ class RPiCamera(Camera):
 
         self.picam2 = Picamera2()
         self.config = self.picam2.create_still_configuration(
-            main={"size": low_res}
+            main={"size": square}
         )
         self.picam2.configure(self.config)
  
@@ -33,8 +34,7 @@ class RPiCamera(Camera):
             return np.array(Image.open("./captures/20250526_225300.jpg"))
         if OperationManager.save_over:
             self.save_frame(frame)
-        return frame#self.save_frame(frame)
- 
+        return frame
 
     def configure(self, goal_exposure, goal_gain=2, max_attempts=10):
         super().configure(goal_exposure, goal_gain)
@@ -75,7 +75,6 @@ class RPiCamera(Camera):
         if not currently_on:
             self.picam2.stop()
         
- 
     def stop(self):
         super().stop()
         self.picam2.stop()

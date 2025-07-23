@@ -11,6 +11,11 @@ from operation import OperationManager
 from capture.adjuster import Adjuster
 from utils import solve_rotation
 
+class PipelineMode:
+    NAVIGATE = 0
+    FOCUS = 1
+    ALIGN = 2
+
 class Astroflo:
 
     capturer: Camera = None
@@ -28,7 +33,7 @@ class Astroflo:
         self.fails = 0
         self.running = False
 
-        self.configuring = False
+        self.mode = PipelineMode.NAVIGATE
         self.latest_image = None # Stored for rendering
 
         self.analysis = ImageAnalysis() 
@@ -54,7 +59,7 @@ class Astroflo:
             self._pipeline.join(timeout=2.0)
     
     def configure_camera(self, img):
-        if self.configuring and hasattr(self, "analysis"):
+        if hasattr(self, "analysis") and img is not None:
             loc = self.analysis.find_brightest(img)
             if loc is not None:
                 y, x, _ = loc[0]
@@ -70,27 +75,35 @@ class Astroflo:
                 return True
         return False
 
+    def process_image(self, img):
+        if img is not None:
+            timestamp = time.time()
+            if OperationManager.perform_analysis:
+                self.analysis.add_image(img)
+            
+            result = self.solver.solve(img)
+            with self.state_lock:
+                if result is not None:
+                    self.fails = 0
+                    if (not self.latest_timestamp or timestamp > self.latest_timestamp) and result[1] != 'Failed':
+                        self.set_latest(result, timestamp)
+                elif OperationManager.dynamic_adjust:
+                    self.adjuster.fail()
+
+    def align(self, img):
+        self.latest_image = img # save image for finding brighest pixel
+
     def pipeline(self):
         self.running = True
         while self.running:
             img = self.capturer.capture()
-            if img is not None:
-                timestamp = time.time()
-                if OperationManager.perform_analysis:
-                    self.analysis.add_image(img)
-                
-                configuring = self.configure_camera(img)
-                if configuring:
-                    continue
-
-                result = self.solver.solve(img)
-                with self.state_lock:
-                    if result is not None:
-                        self.fails = 0
-                        if (not self.latest_timestamp or timestamp > self.latest_timestamp) and result[1] != 'Failed':
-                            self.set_latest(result, timestamp)
-                    elif OperationManager.dynamic_adjust:
-                        self.adjuster.fail()
+            match self.mode:
+                case PipelineMode.NAVIGATE:
+                    self.process_image(img)
+                case PipelineMode.FOCUS:
+                    self.configure_camera(img)
+                case PipelineMode.ALIGN:
+                    self.align(img)
             time.sleep(0.1)
 
     def set_latest(self, result, timestamp):
@@ -125,11 +138,22 @@ class Astroflo:
         if OperationManager.dynamic_adjust:
             self.adjuster.success()
         
+    def start_configuring(self):
+        # Will begin saving CROPPED images for setting camera focus
+        self.mode = PipelineMode.FOCUS
+    
+    def start_alignment(self):
+        # Will begin saving FULL images, in order to find brightest pixel for alignment
+        self.mode = PipelineMode.ALIGN
+
     def stop_configuring(self):
-        self.configuring = False
+        self.mode = PipelineMode.NAVIGATE
         self.latest_image = None
 
     def find_target_pixel(self) -> bool:
+        if self.mode != PipelineMode.ALIGN or self.latest_image is None:
+            print("Pipeline is not in ALIGN mode, or has not captured an image yet.")
+            return False
         brightest_pixel, brightest_value = self.analysis.find_brightest(self.latest_image)
         if brightest_pixel is not None:
             print("Brightest pixel:", brightest_pixel, "Value:", brightest_value)

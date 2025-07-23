@@ -30,7 +30,8 @@ class ImageAnalysis:
             mask = np.abs(pixels - mean) < (sigma * std)
             pixels = pixels[mask]
             # early stopping if not enough pixels left
-        
+            if len(pixels) < 100:
+                break
         # Estiamte background and noise levels
         background = np.median(pixels)
         noise = np.std(pixels)
@@ -57,7 +58,7 @@ class ImageAnalysis:
         
         clean = (image-bg).clip(0)
 
-        self.calculate_fwhm(clean)
+        self.calculate_fwhm_radial(clean)
         self.calculate_star_count(clean, noise)
 
         self._limit_values()
@@ -70,7 +71,35 @@ class ImageAnalysis:
         brightest_pixel = np.unravel_index(np.argmax(blurred), blurred.shape)
         return brightest_pixel, brightest_value
     
-    def calculate_fwhm(self, image):
+    def calculate_fwhm_radial(self, image):
+        loc, val = self.find_brightest(image)
+        y, x = loc
+        half_max = val / 2.0
+        radius = 0
+
+        # Crop around brightest pixel
+        half_size = 40
+        y_min, y_max = max(0, y-half_size), min(image.shape[0], y+half_size)
+        x_min, x_max = max(0, x-half_size), min(image.shape[1], x+half_size)
+        cropped_image = image[y_min:y_max, x_min:x_max]
+
+        # Calculate radial profile
+        center_y, center_x = cropped_image.shape[0] // 2, cropped_image.shape[1] // 2
+        y_indices, x_indices = np.indices(cropped_image.shape)
+        radii = np.sqrt((y_indices - center_y)**2 + (x_indices - center_x)**2)
+
+        # Find FWHM
+        radial_profile = np.mean(cropped_image, axis=1)
+        above_half = radial_profile >= half_max
+        if np.any(above_half):
+            indices = np.where(above_half)[0]
+            radius = indices[-1] - indices[0] + 1
+        else:
+            radius = 0
+        self.fwhm_values.append(radius)
+        return radius, (center_x, center_y)
+
+    def calculate_fwhm_linear(self, image):
         loc, val = self.find_brightest(image)
         half_max = val / 2.0
         y, x = loc
@@ -117,8 +146,6 @@ class ImageAnalysis:
         
         self.fwhm_values.append(fwhm)
 
-        # TODO: convert to radial FWHM calculation
-
         return fwhm, (center_x, center_y)
 
     def calculate_star_count(self, image, noise):
@@ -153,23 +180,3 @@ class ImageAnalysis:
             'star_count': self.star_counts[latest_index],
             'fwhm': self.fwhm_values[latest_index]
         }
-
-
-# times = []
-
-# i = ImageAnalysis()
-# start = time.time()
-# i.add_image(np.array(Image.open('/Users/owen/astroflo/test_data/out_of_focus.jpg')))
-
-# times.append(time.time() - start)
-# start = time.time()
-# i.add_image(np.array(Image.open('/Users/owen/astroflo/test_data/bright_sky.jpg'))) 
-# print(i.get_latest()) # 74.013 + 2.2278
-# times.append(time.time() - start)
-# start = time.time()
-# i.add_image(np.array(Image.open('/Users/owen/astroflo/test_data/output_0.jpg')))
-# print(i.get_latest()) # 13.3040 + 0.9596
-# times.append(time.time() - start)
-
-# print(f"Processing times: {times}")
-# print(f"Average time: {np.mean(times):.2f} seconds")

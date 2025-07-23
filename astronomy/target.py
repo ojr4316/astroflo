@@ -6,14 +6,14 @@ class TargetManager:
 
     def __init__(self, location: EarthLocation):
         self.location = location
-        self.planets = Ephemeris(
+        self.ephemeris = Ephemeris(
             lat=location.lat.degree, 
             lon=location.lon.degree, 
             elevation=location.height.value
         )
-        
-        self.stars = Stars(self.planets)
-        
+
+        self.stars = Stars(self.ephemeris)
+
         # Current target information
         self.ra = None
         self.dec = None
@@ -34,6 +34,4 @@ class TargetManager:
         if self.ra is None:
             return None
         return (self.ra, self.dec)
-
-
     

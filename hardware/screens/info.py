@@ -2,7 +2,7 @@ import pytz
 from hardware.screens.screen import Screen
 from hardware.state import ScreenState
 
-class DebugSoftware(Screen):
+class InfoScreen(Screen):
 
     def setup_input(self):
         self.screen_input.controls['A']["press"] = self.select

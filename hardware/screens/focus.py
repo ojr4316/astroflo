@@ -2,10 +2,10 @@ from PIL import Image
 from hardware.screens.screen import Screen
 from hardware.state import ScreenState
 
-class DebugHardware(Screen):
+class FocusScreen(Screen):
 
     def setup_input(self):
-        self.pipeline.configuring = True # enable camera capture, no solve
+        self.pipeline.start_configuring()
         
         self.screen_input.controls['A']["press"] = self.select
         self.screen_input.controls['B']["press"] = self.alt_select

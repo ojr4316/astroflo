@@ -21,13 +21,15 @@ class NavigationScreen(Screen):
     def right(self):
         if self.pipeline.scope.zoom < 1:
             self.pipeline.scope.zoom = 1
+        elif self.pipeline.scope.zoom == 1:
+            self.pipeline.scope.zoom = 2
         elif self.pipeline.scope.zoom < 20:
             self.pipeline.scope.zoom += 2
         else:
             self.pipeline.scope.zoom = 20
 
     def alt_select(self):
-        self.ui.change_screen(ScreenState.DEBUG_HARDWARE)
+        self.ui.change_screen(ScreenState.DIRECTIONS)
 
     def select(self):
         self.pipeline.find_target_pixel()

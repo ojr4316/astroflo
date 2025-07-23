@@ -2,6 +2,7 @@ import numpy as np
 import os
 from skyfield.api import wgs84, load
 from skyfield.positionlib import ICRF
+import time
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ephemeris_file = os.path.join(BASE_DIR, "..", 'data', "de440s.bsp")
@@ -32,6 +33,7 @@ class Ephemeris:
         self.timescale = load.timescale()
         self.names = ["MERCURY", "VENUS", "MARS", "JUPITER", "SATURN", "URANUS", "NEPTUNE", "PLUTO", "SUN", "MOON"]
         self.time = time
+        self.planet_cache = {}
         if self.time is None:
             self.time = self.timescale.now()
 
@@ -120,3 +122,23 @@ class Ephemeris:
             'MOON': -12.6
         }
         return magnitudes.get(planet_name, 5.0)
+
+    def get_planets_in_fov(self, ra, dec, radius):
+        current_time = time.time()
+        
+        # Check if we need to refresh planet cache
+        if (self.cache_time is None or 
+            current_time - self.cache_time > self.cache_duration or
+            not self.planet_cache):
+
+            self.planet_cache = self.get_current_positions()
+            self.cache_time = current_time
+
+        # Filter planets within FOV
+        planets_in_fov = []
+        
+        for planet_name, planet_data in self.planet_cache.items():
+            if self.is_within_radius(ra, dec, planet_data['RAdeg'], planet_data['DEdeg'], radius):
+                planets_in_fov.append(planet_data)
+        
+        return planets_in_fov

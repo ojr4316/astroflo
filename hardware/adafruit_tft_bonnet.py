@@ -97,6 +97,5 @@ else: # Fake Screen
         def draw_screen(self, img):
             if img is not None:
                 img = img.resize((240, 240))
-                img.show()
             else:
                 print("No image to display")

@@ -5,11 +5,13 @@ from hardware.renderer import ScreenRenderer
 from hardware.input import Input
 from hardware.adafruit_tft_bonnet import AdafruitTFTBonnet
 
-from hardware.screens.debug_software import DebugSoftware
-from hardware.screens.debug_hardware import DebugHardware
+from hardware.screens.info import InfoScreen
+from hardware.screens.focus import FocusScreen
 from hardware.screens.main_menu import MainMenu
 from hardware.screens.navigation import NavigationScreen
 from hardware.screens.directions import DirectionsScreen
+from hardware.screens.alignment import AlignmentScreen
+from hardware.screens.target_list import TargetList
 from hardware.state import ScreenState
 
 init_text = ['\n', '\n', "~ ASTROFLO ~", "Calibrating camera", "and loading modified", "Tycho catalog.", '\n', '\n', "Please wait 5-10 seconds"]
@@ -35,28 +37,24 @@ class UIManager:
     def build_screens(self):
         self.screens = {
             ScreenState.MAIN_MENU: MainMenu(self),
-            ScreenState.DEBUG_SOFTWARE: DebugSoftware(self),
-            ScreenState.DEBUG_HARDWARE: DebugHardware(self),
+            ScreenState.INFO: InfoScreen(self),
+            ScreenState.FOCUS: FocusScreen(self),
             ScreenState.NAVIGATE: NavigationScreen(self),
-            ScreenState.DIRECTION: DirectionsScreen(self),
+            ScreenState.DIRECTIONS: DirectionsScreen(self),
+            ScreenState.ALIGNMENT: AlignmentScreen(self),
+            ScreenState.TARGET_LIST: TargetList(self)
         }
 
     def change_screen(self, screen: ScreenState):
         self.input.reset()
         self.state = screen
-        self.pipeline.configuring = False
         self.screens[self.state].setup_input()
         
         time.sleep(0.5) # prevent multiple page changes
 
     def render(self):
-        match(self.state):
-            case ScreenState.MAIN_MENU: return self.screens[ScreenState.MAIN_MENU].render()
-            case ScreenState.DEBUG_SOFTWARE: return self.screens[ScreenState.DEBUG_SOFTWARE].render()
-            case ScreenState.NAVIGATE: return self.screens[ScreenState.NAVIGATE].render()
-            case ScreenState.DEBUG_HARDWARE: return self.screens[ScreenState.DEBUG_HARDWARE].render()
-            case ScreenState.DIRECTION: return self.screens[ScreenState.DIRECTION].render()
-
+        return self.screens[self.state].render()
+    
     def handle_input(self):
         self.screen.handle_input(self.input)
 

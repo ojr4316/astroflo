@@ -1,5 +1,4 @@
 """ Custom Starfield Renderer. Use with scope, target manager, stars, and ephem """
-
 from PIL import Image, ImageDraw
 import numpy as np
 
@@ -80,8 +79,6 @@ class NavigationStarfield:
         image_size = 240
         overlay = Image.new("RGBA", (image_size, image_size), (0, 0, 0, 0))
         draw = ImageDraw.Draw(overlay)
-        #if image is None:
-        #    image = Image.new("RGB", (image_size, image_size), "black")
 
         r = self.stars.radius_from_telescope(self.scope.focal_length, self.scope.eyepiece, self.scope.eyepiece_fov) * self.scope.zoom
         x_norm, y_norm, r_deg = self.project_target_to_view(

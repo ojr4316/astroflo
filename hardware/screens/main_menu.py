@@ -6,7 +6,7 @@ class MainMenu(Screen):
     def __init__(self, ui):
         super().__init__(ui)
         self.title = "~astroflo"
-        self.options = ["Target Select", "Directions", "Navigate"]
+        self.options = ["Focus", "Alignment", "Target Select", "Navigate"]
         self.selected_y = 0
         self.max_y = len(self.options) - 1
 
@@ -19,9 +19,10 @@ class MainMenu(Screen):
 
     def select(self):
         match self.selected_y:
-            case 0: self.ui.change_screen(ScreenState.TARGET_LIST)
-            case 1: self.ui.change_screen(ScreenState.DIRECTION)
-            case 2: self.ui.change_screen(ScreenState.NAVIGATE)
+            case 0: self.ui.change_screen(ScreenState.FOCUS)
+            case 1: self.ui.change_screen(ScreenState.ALIGNMENT)
+            case 2: self.ui.change_screen(ScreenState.TARGET_SELECT)
+            case 3: self.ui.change_screen(ScreenState.NAVIGATE)
 
     def alt_select(self):
         self.ui.change_screen(ScreenState.DEBUG_SOFTWARE)

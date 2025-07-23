@@ -9,6 +9,7 @@ from utils import plt_to_img
 import threading
 import pandas
 from skyfield.api import Angle
+from utils import radec_to_altaz
 
 def clean(n) -> str:
     if n is np.ma.masked:
@@ -44,16 +45,17 @@ class Stars:
         star_results = self.tycho[within_radius]
         star_results = star_results[star_results['Vmag'] <= mag_limit]
 
-        planets_in_fov = self.get_planets_in_fov(ra, dec, radius)
-        
-        if planets_in_fov:
-            combined_results = []
-            
-            for star in star_results:
+        planets_in_fov = self.ephemeris.get_planets_in_fov(ra, dec, radius)
+        return self.build_targets(star_results, planets_in_fov)
+    
+    def build_targets(self, stars, ephem):
+        if ephem:
+            combined = []
+            for star in stars:
                 is_planet = False
                 if star['TYC'] is not None and len(star['TYC']) == 2:
-                    is_planet = True
-                combined_results.append({
+                    is_planet = True # DSOs
+                combined.append({
                     'Name': star['Name'],
                     'RAdeg': star['RAdeg'],
                     'DEdeg': star['DEdeg'],
@@ -61,14 +63,14 @@ class Stars:
                     'is_planet': is_planet
                 })
             
-            for planet in planets_in_fov:
-                combined_results.append(planet)
-            
-            return combined_results
+            for planet in ephem:
+                combined.append(planet)
+            return combined
         else:
             return [{'Name': star['Name'], 'RAdeg': star['RAdeg'], 'DEdeg': star['DEdeg'], 
-                    'Vmag': star['Vmag'], 'is_planet': False} for star in star_results]
-    
+                    'Vmag': star['Vmag'], 'is_planet': False} for star in stars]
+
+
     # will probably combine/add to telescope
     def radius_from_telescope(self, focal_length: float, eyepiece: float, eyepiece_afov: float):
         mag = focal_length / eyepiece
@@ -182,30 +184,6 @@ class Stars:
             plt.axis('off')
             matplotlib.pyplot.close()
             return plt_to_img(fig)
-        
-
-    def get_planets_in_fov(self, ra, dec, radius):
-        current_time = time.time()
-        
-        # Check if we need to refresh planet cache
-        if (self.cache_time is None or 
-            current_time - self.cache_time > self.cache_duration or
-            not self.planet_cache):
-            
-            if self.ephemeris:
-                self.planet_cache = self.ephemeris.get_current_positions()
-                self.cache_time = current_time
-            else:
-                self.planet_cache = {}
-        
-        # Filter planets within FOV
-        planets_in_fov = []
-        
-        for planet_name, planet_data in self.planet_cache.items():
-            if self.is_within_radius(ra, dec, planet_data['RAdeg'], planet_data['DEdeg'], radius):
-                planets_in_fov.append(planet_data)
-        
-        return planets_in_fov
     
     def is_within_radius(self, center_ra, center_dec, target_ra, target_dec, radius): # distance with haversine formula
         radius_rad = np.radians(radius)

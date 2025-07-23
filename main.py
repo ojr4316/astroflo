@@ -36,9 +36,6 @@ def build_solver():
         return FakeSolver()
     
 def test_ui(flo: Astroflo, ui: UIManager):
-    ui.state = ScreenState.DIRECTION
-    flo.scope.set_camera_offset(0.0, 0.0)
-
     ui.render()
     time.sleep(5)
     img = ui.render()
@@ -46,12 +43,11 @@ def test_ui(flo: Astroflo, ui: UIManager):
 
     while True:
         ui.render()
-        time.sleep(8)
+        time.sleep(4)
         img = ui.render()
         img.show()
-        time.sleep(100)
+        time.sleep(4)
     
-
 last_time = None
 def running(flo: Astroflo):
     global last_time
@@ -79,7 +75,7 @@ def try_set_target(scope: Telescope, name: str):
         print(f"Target '{name}' not found in catalog.")
 
 def try_set_planet(scope: Telescope, name: str):
-    planet = scope.target_manager.planets.get_current_position(name)
+    planet = scope.target_manager.ephemeris.get_current_position(name)
     if planet is not None:
         scope.target_manager.set_target(planet['RAdeg'], planet['DEdeg'], planet['Name'])
         print(f"Target set to {planet['Name']} at RA: {planet['RAdeg']}, DEC: {planet['DEdeg']}")
@@ -108,7 +104,8 @@ def main():
     flo.start()
 
     ui.init_pipeline(flo)
-    ui.change_screen(ScreenState.MAIN_MENU)
+    ui.change_screen(ScreenState.TARGET_LIST)
+
     if OperationManager.render_test:
         test_ui(flo, ui)
     else:

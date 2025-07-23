@@ -25,7 +25,7 @@ class MainMenu(Screen):
             case 3: self.ui.change_screen(ScreenState.NAVIGATE)
 
     def alt_select(self):
-        self.ui.change_screen(ScreenState.DEBUG_SOFTWARE)
+        self.ui.change_screen(ScreenState.INFO)
 
     def render(self):
         return self.renderer.render_menu(self.title, self.options, self.selected_y)

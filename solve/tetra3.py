@@ -36,13 +36,19 @@ class Tetra3Solver(Solver):
                 image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
             #processed = tetra3.crop_and_downsample_image(image, downsample=0, return_offsets=True)
             #image, offsets = processed
-            
             centroids = self.cedar_detect.extract_centroids(image, sigma=8, use_binned=True)
-            result = self.t3.solve_from_centroids(centroids, fov_estimate=self.fov, size=(image.shape[1], image.shape[0]), target_pixel=self.target_pixel) # much faster than using Image
+            target_pixel = None
+            if self.target_pixel is not None:
+                target_pixel = (self.target_pixel[0], self.target_pixel[1])
+            result = self.t3.solve_from_centroids(centroids, fov_estimate=self.fov, size=(image.shape[1], image.shape[0]), target_pixel=target_pixel) # much faster than using Image
             #result = self.t3.solve_from_image(Image.fromarray(image), fov_estimate=self.fov, fov_max_error=1, pattern_checking_stars=20)
-
-            ra = result['RA']
-            dec = result['Dec']
+            print(result)
+            if self.target_pixel is not None:
+                ra = result['RA_target']
+                dec = result['Dec_target']
+            else:
+                ra = result['RA']
+                dec = result['Dec']
             roll = result['Roll']
             if ra is not None:
                  coords = (ra, dec)

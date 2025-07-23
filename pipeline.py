@@ -45,7 +45,7 @@ class Astroflo:
         self.capturer.start()
         
         # Configure Solver
-        self.solver.fov = 22
+        self.solver.fov = 22.1
 
         self.running = True
         self._pipeline.start()

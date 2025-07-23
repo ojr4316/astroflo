@@ -64,6 +64,7 @@ class AlignmentScreen(Screen):
         if current_target is None:
             #current_target = (512/2, 512/2) # default center
             self.current_target = pipeline.find_target_pixel()
+            return
 
         # draw the target pixel on the latest image
         latest_image = Image.fromarray(pipeline.latest_image)

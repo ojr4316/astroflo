@@ -31,7 +31,7 @@ class RPiCamera(Camera):
         self.last_metadata = self.picam2.capture_metadata()            
 
         if not OperationManager.use_real_images:
-            return np.array(Image.open("./captures/20250526_225300.jpg"))
+            return np.array(Image.open("./test_data/vega_focus.jpg"))
         if OperationManager.save_over:
             self.save_frame(frame)
         return frame

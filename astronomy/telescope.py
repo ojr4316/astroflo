@@ -164,9 +164,9 @@ class Telescope:
 
         return targets
     
-    def get_dsos(self, mag_limit=6):
+    def get_dsos(self, mag_limit=15):
         tycho = self.target_manager.stars.tycho
-        dsos = tycho[(tycho['Vmag'] <= mag_limit) & (tycho['Name'].filled('') != '') & (tycho['TYC'][0] == 'M')]
+        dsos = tycho[(tycho['Vmag'] <= mag_limit) & (np.char.startswith(tycho['TYC'].astype(str), 'M'))]
         targets = self.target_manager.stars.build_targets(dsos, [])
         ra_values = [target['RAdeg'] for target in targets]
         dec_values = [target['DEdeg'] for target in targets]
@@ -178,7 +178,25 @@ class Telescope:
         return targets
 
     def get_solar_system(self):
-        targets = self.target_manager.ephemeris.get_current_positions()
+        positions_dict = self.target_manager.ephemeris.get_current_positions()
+        
+        # Convert dictionary to list of dictionaries
+        if isinstance(positions_dict, dict):
+            targets_list = []
+            for name, data in positions_dict.items():
+                planet_dict = {
+                    'Name': name,
+                    'RAdeg': data['RAdeg'],
+                    'DEdeg': data['DEdeg'],
+                    'Vmag': data.get('Vmag', 5.0),  # Default magnitude if not provided
+                    'is_planet': True
+                }
+                targets_list.append(planet_dict)
+        else:
+            targets_list = positions_dict  # Already a list
+        
+        targets = self.target_manager.stars.build_targets([], targets_list)
+
         ra_values = [target['RAdeg'] for target in targets]
         dec_values = [target['DEdeg'] for target in targets]
         alts, azs = radec_to_altaz(ra_values, dec_values, self.astropy_time(), self.location)

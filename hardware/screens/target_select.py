@@ -7,7 +7,7 @@ class TargetSelect(Screen):
         super().__init__(ui)
         self.title = "Targets:"
         self.scope = ui.scope
-        self.mag_limit = 6
+        self.mag_limit = 4
         self.selected_y = 0
         self.options = []
         self.names = []
@@ -41,14 +41,12 @@ class TargetSelect(Screen):
             self.selected_y -= 1
         else:
             self.selected_y = self.max_y
-        self.build_options()
 
     def down(self):
         if self.selected_y < self.max_y:
             self.selected_y += 1
         else:
             self.selected_y = 0
-        self.build_options()
 
     def select(self):
         if self.selected_y >= self.max_y:
@@ -72,9 +70,11 @@ class TargetSelect(Screen):
             self.mag_limit += 0.5
         else:
             self.mag_limit = 10
+        self.build_options()
 
     def decrease(self):
         if self.mag_limit >= 0.5:
             self.mag_limit -= 0.5
         else:
             self.mag_limit = 0
+        self.build_options()

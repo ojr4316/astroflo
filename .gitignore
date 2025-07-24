@@ -7,3 +7,13 @@ captures/**
 **/.lgd-nfy0
 **/.vscode/
 astronomy/catalog/**
+data/catalog
+data/catalogue-de-messier.csv
+data/hip_main.dat
+data/index.dat
+data/ReadMe
+data/ReadMe_bright
+data/ReadMe_names
+data/tyc_build.fits
+data/tyc_main.dat
+data/tyc_old.fits

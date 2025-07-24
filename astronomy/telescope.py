@@ -150,15 +150,36 @@ class Telescope:
             print("Found offsets:", x_offset, y_offset)
 
             return True
-            
-    def get_sky(self, mag_limit=4, dsos_only=False):
+    
+    def get_bright_stars(self, mag_limit=6):
         tycho = self.target_manager.stars.tycho
+        stars = tycho[(tycho['Vmag'] <= mag_limit) & (tycho['Name'].filled('') != '') & (tycho['TYC'].filled('')[0] != 'M')]
+        targets = self.target_manager.stars.build_targets(stars, [])
+        ra_values = [target['RAdeg'] for target in targets]
+        dec_values = [target['DEdeg'] for target in targets]
+        alts, azs = radec_to_altaz(ra_values, dec_values, self.astropy_time(), self.location)
+
+        mask = alts > 0
+        targets = [targets[i] for i in range(len(targets)) if mask[i]]
+
+        return targets
+    
+    def get_dsos(self, mag_limit=6):
+        tycho = self.target_manager.stars.tycho
+        dsos = tycho[(tycho['Vmag'] <= mag_limit) & (tycho['Name'].filled('') != '') & (tycho['TYC'].filled('')[0] == 'M')]
+        targets = self.target_manager.stars.build_targets(dsos, [])
+        ra_values = [target['RAdeg'] for target in targets]
+        dec_values = [target['DEdeg'] for target in targets]
+        alts, azs = radec_to_altaz(ra_values, dec_values, self.astropy_time(), self.location)
+
+        mask = alts > 0
+        targets = [targets[i] for i in range(len(targets)) if mask[i]]
+
+        return targets
+
+    def get_solar_system(self):
         ephem = self.target_manager.ephemeris.get_current_positions()
-        stars = tycho[(tycho['Vmag'] <= mag_limit) & (tycho['Name'].filled('') != '')]
-        if dsos_only:
-            stars = [s for s in stars if len(str(s['TYC'])) == 2]
-        ephem = [p for p in ephem.values() if p['Vmag'] <= mag_limit]
-        targets = self.target_manager.stars.build_targets(stars, ephem)
+        targets = self.target_manager.stars.build_targets([], ephem)
         ra_values = [target['RAdeg'] for target in targets]
         dec_values = [target['DEdeg'] for target in targets]
         alts, azs = radec_to_altaz(ra_values, dec_values, self.astropy_time(), self.location)

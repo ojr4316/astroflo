@@ -12,6 +12,7 @@ from hardware.screens.navigation import NavigationScreen
 from hardware.screens.directions import DirectionsScreen
 from hardware.screens.alignment import AlignmentScreen
 from hardware.screens.target_list import TargetList
+from hardware.screens.target_select import TargetSelect
 from hardware.state import ScreenState
 
 init_text = ['\n', '\n', "~ ASTROFLO ~", "Calibrating camera", "and loading modified", "Tycho catalog.", '\n', '\n', "Please wait 5-10 seconds"]
@@ -29,6 +30,8 @@ class UIManager:
 
         self.screens = {}
 
+        self.selected_catalog = 0 # 0: Stars, 1: Messier, 2: Solar System
+
     def init_pipeline(self, pipeline):
         self.pipeline = pipeline
         self.scope = pipeline.scope
@@ -42,14 +45,15 @@ class UIManager:
             ScreenState.NAVIGATE: NavigationScreen(self),
             ScreenState.DIRECTIONS: DirectionsScreen(self),
             ScreenState.ALIGNMENT: AlignmentScreen(self),
-            ScreenState.TARGET_LIST: TargetList(self)
+            ScreenState.TARGET_LIST: TargetList(self),
+            ScreenState.TARGET_SELECT: TargetSelect(self)
         }
 
     def change_screen(self, screen: ScreenState):
         self.input.reset()
         self.state = screen
         self.screens[self.state].setup_input()
-        match(screen):
+        match(screen): # TODO: figure out better way to communicate screen state (operation mode) to pipeline
             case ScreenState.NAVIGATE: self.pipeline.mode = 0
             case ScreenState.FOCUS: self.pipeline.mode = 1
             case ScreenState.ALIGNMENT: self.pipeline.mode = 2

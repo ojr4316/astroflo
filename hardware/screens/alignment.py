@@ -6,10 +6,10 @@ class AlignmentScreen(Screen):
     
     def __init__(self, ui):
         super().__init__(ui)
-        self.current_target = ui.pipeline.solver.target_pixel
 
 
     def setup_input(self):
+        self.current_target = self.ui.pipeline.solver.target_pixel
         self.screen_input.controls['A']["press"] = self.select
         self.screen_input.controls['B']["press"] = self.alt_select
 
@@ -50,7 +50,7 @@ class AlignmentScreen(Screen):
         self.ui.change_screen(ScreenState.MAIN_MENU)
 
     def select(self):
-        self.pipeline.solver.target_pixel = self.current_target
+        self.pipeline.solver.save_offset(self.current_target)
         print(f"Target pixel set to {self.current_target}")
         self.ui.change_screen(ScreenState.NAVIGATE)
    

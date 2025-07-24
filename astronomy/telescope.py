@@ -10,15 +10,13 @@ from utils import apply_rotation, solve_rotation, radec_to_altaz, altaz_to_radec
 import os
 from astropy.time import Time
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-OFFSET_FILE = os.path.join(BASE_DIR, "..", "offset.npy")
-
 rochesterLat = 43.1566
 rochesterLong = -77.6088
 rochesterElevation = 150
 rochester = EarthLocation(
     lat=rochesterLat*u.deg, lon=rochesterLong*u.deg, height=rochesterElevation*u.m)
 
+MIN_ALT = 20
 
 class Telescope:
     def __init__(self, aperture: int, focal_length: int, eyepiece: int, eyepiece_fov: int, zoom: int = 1):
@@ -48,15 +46,7 @@ class Telescope:
         self.timescale = load.timescale()
         self.time = self.timescale.now() #self.timescale.utc(2025, 3, 21, 2, 0, 0)
 
-        if os.path.exists(OFFSET_FILE):
-            print("loading previously set offsets")
-            offsets = np.load(OFFSET_FILE)
-            print(offsets)
-            self.rotation_matrix = offsets
-    
-    def set_rotation_matrix(self, matrix):
-        self.rotation_matrix = matrix
-        np.save(OFFSET_FILE, matrix)
+        
 
     def astropy_time(self):
         return Time(self.get_time().tt, format='jd', scale='tt')
@@ -159,7 +149,7 @@ class Telescope:
         dec_values = [target['DEdeg'] for target in targets]
         alts, azs = radec_to_altaz(ra_values, dec_values, self.astropy_time(), self.location)
 
-        mask = alts > 0
+        mask = alts > MIN_ALT
         targets = [targets[i] for i in range(len(targets)) if mask[i]]
 
         return targets
@@ -171,8 +161,7 @@ class Telescope:
         ra_values = [target['RAdeg'] for target in targets]
         dec_values = [target['DEdeg'] for target in targets]
         alts, azs = radec_to_altaz(ra_values, dec_values, self.astropy_time(), self.location)
-
-        mask = alts > 0
+        mask = alts > MIN_ALT
         targets = [targets[i] for i in range(len(targets)) if mask[i]]
 
         return targets
@@ -201,7 +190,7 @@ class Telescope:
         dec_values = [target['DEdeg'] for target in targets]
         alts, azs = radec_to_altaz(ra_values, dec_values, self.astropy_time(), self.location)
 
-        mask = alts > 0
+        mask = alts > MIN_ALT
         targets = [targets[i] for i in range(len(targets)) if mask[i]]
 
         return targets

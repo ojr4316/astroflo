@@ -156,7 +156,5 @@ class Astroflo:
             return False
         brightest_pixel, brightest_value = self.analysis.find_brightest(self.latest_image)
         if brightest_pixel is not None:
-            print("Brightest pixel:", brightest_pixel, "Value:", brightest_value)
-            self.solver.target_pixel = brightest_pixel
             return brightest_pixel
         return None

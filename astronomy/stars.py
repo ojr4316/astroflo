@@ -46,26 +46,26 @@ class Stars:
         return self.build_targets(star_results, planets_in_fov)
     
     def build_targets(self, stars, ephem):
-        if ephem:
-            combined = []
-            for star in stars:
-                is_planet = False
-                if star['TYC'] is not None and len(star['TYC']) == 2:
-                    is_planet = True # DSOs
-                combined.append({
-                    'Name': star['Name'],
-                    'RAdeg': star['RAdeg'],
-                    'DEdeg': star['DEdeg'],
-                    'Vmag': star['Vmag'],
-                    'is_planet': is_planet
-                })
+        combined = []
+        for star in stars:
+            is_planet = False
+            if star['TYC'] is not None and str(star['TYC'])[0] == 'M':
+                is_planet = True # DSOs
+                print("flagging dso as planet")
+            name = str(star['Name'])
+            if len(str(name).replace("-", "")) == 0:
+                name = str(star['TYC'])
+            combined.append({
+                'Name': name,
+                'RAdeg': star['RAdeg'],
+                'DEdeg': star['DEdeg'],
+                'Vmag': star['Vmag'],
+                'is_planet': is_planet
+            })
             
-            for planet in ephem:
-                combined.append(planet)
-            return combined
-        else:
-            return [{'Name': star['Name'], 'RAdeg': star['RAdeg'], 'DEdeg': star['DEdeg'], 
-                    'Vmag': star['Vmag'], 'is_planet': False} for star in stars]
+        for planet in ephem:
+            combined.append(planet)
+        return combined
 
 
     # will probably combine/add to telescope

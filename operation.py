@@ -8,7 +8,7 @@ class OperationManager:
 
     ### Feature Flags
     # default options
-    use_real_images: bool = False # Use cameras images by default, else use test image
+    use_real_images: bool = True # Use cameras images by default, else use test image
     stellarium_server: bool = is_pi() # Telescope Control Stellarium Plugin
     perform_analysis: bool = True # add each image to a stat analyzer
     save_over: bool = True # continuously save images over existing file (for preview)

@@ -153,7 +153,7 @@ class Telescope:
     
     def get_bright_stars(self, mag_limit=6):
         tycho = self.target_manager.stars.tycho
-        stars = tycho[(tycho['Vmag'] <= mag_limit) & (tycho['Name'].filled('') != '') & (tycho['TYC'].filled('')[0] != 'M')]
+        stars = tycho[(tycho['Vmag'] <= mag_limit) & (tycho['Name'].filled('') != '') & (tycho['TYC'][0] != 'M')]
         targets = self.target_manager.stars.build_targets(stars, [])
         ra_values = [target['RAdeg'] for target in targets]
         dec_values = [target['DEdeg'] for target in targets]
@@ -166,7 +166,7 @@ class Telescope:
     
     def get_dsos(self, mag_limit=6):
         tycho = self.target_manager.stars.tycho
-        dsos = tycho[(tycho['Vmag'] <= mag_limit) & (tycho['Name'].filled('') != '') & (tycho['TYC'].filled('')[0] == 'M')]
+        dsos = tycho[(tycho['Vmag'] <= mag_limit) & (tycho['Name'].filled('') != '') & (tycho['TYC'][0] == 'M')]
         targets = self.target_manager.stars.build_targets(dsos, [])
         ra_values = [target['RAdeg'] for target in targets]
         dec_values = [target['DEdeg'] for target in targets]
@@ -178,8 +178,7 @@ class Telescope:
         return targets
 
     def get_solar_system(self):
-        ephem = self.target_manager.ephemeris.get_current_positions()
-        targets = self.target_manager.stars.build_targets([], ephem)
+        targets = self.target_manager.ephemeris.get_current_positions()
         ra_values = [target['RAdeg'] for target in targets]
         dec_values = [target['DEdeg'] for target in targets]
         alts, azs = radec_to_altaz(ra_values, dec_values, self.astropy_time(), self.location)

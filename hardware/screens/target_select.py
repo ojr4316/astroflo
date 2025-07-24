@@ -9,7 +9,8 @@ class TargetSelect(Screen):
         self.scope = ui.scope
         self.mag_limit = 6
         self.selected_y = 0
-        self.build_options()
+        self.options = []
+        self.names = []
 
     def build_options(self):
         match self.ui.selected_catalog:
@@ -25,6 +26,7 @@ class TargetSelect(Screen):
             self.selected_y = 0
 
     def setup_input(self):
+        self.build_options()
         self.screen_input.controls['R']["press"] = self.up
         self.screen_input.controls['L']["press"] = self.down
 
@@ -49,6 +51,9 @@ class TargetSelect(Screen):
         self.build_options()
 
     def select(self):
+        if self.selected_y >= self.max_y:
+            print("Out of bounds")
+            return
         self.scope.target_manager.set_target(
             self.options[self.selected_y]['RAdeg'],
             self.options[self.selected_y]['DEdeg'],

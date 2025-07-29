@@ -1,18 +1,20 @@
 from hardware.screens.screen import Screen
 from PIL import Image, ImageDraw
 from hardware.state import ScreenState
-from observation_context import SolverState
+from observation_context import SolverState, CameraState
 from hardware.renderer import render_image_with_caption, render_many_text
+from analyzer import analyzer
 
 class AlignmentScreen(Screen):
     
-    def __init__(self, ui_state, solver_context: SolverState):
-        super().__init__(ui_state)
-        self.solver_context = solver_context
+    def __init__(self, ui_state, screen_input, camera_state: CameraState, solver_state: SolverState):
+        super().__init__(ui_state, screen_input)
+        self.camera_state = camera_state
+        self.solver_state = solver_state
 
     def setup_input(self):
         # Acquire current target pixel from context
-        self.current_target = self.solver_context.target_pixel
+        self.current_target = self.solver_state.target_pixel
 
         self.screen_input.controls['A']["press"] = self.select
         self.screen_input.controls['B']["press"] = self.alt_select
@@ -59,19 +61,19 @@ class AlignmentScreen(Screen):
         self.ui_state.change_screen(ScreenState.NAVIGATE)
    
     def render(self):
-        pipeline = self.pipeline
         current_target = self.current_target
 
-        if pipeline.latest_image is None:
+        if self.camera_state.latest_image is None:
             return render_many_text(["Waiting for first image..."])
         
         if current_target is None:
             #current_target = (512/2, 512/2) # default center
-            self.current_target = pipeline.find_target_pixel()
+            pixel, value = analyzer.find_brightest(self.camera_state.latest_image)
+            self.current_target = pixel
             return
 
-        # draw the target pixel on the latest image
-        latest_image = Image.fromarray(pipeline.latest_image)
+        # draw target on the latest image
+        latest_image = Image.fromarray(self.camera_state.latest_image)
         draw = ImageDraw.Draw(latest_image)
         r = 10
         y, x = current_target[0], current_target[1]

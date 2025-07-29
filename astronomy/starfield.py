@@ -115,7 +115,7 @@ class StarfieldRenderer:
             return plt_to_img(fig)
     
     def add_navigation_overlay(self, image: Image):
-        current_ra, current_dec = self.telescope_state.get_position()
+        current_ra, current_dec = self.telescope_state.position
         if current_ra is None:
             return None, 0
 
@@ -129,7 +129,7 @@ class StarfieldRenderer:
         overlay = Image.new("RGBA", (image_size, image_size), (0, 0, 0, 0))
         draw = ImageDraw.Draw(overlay)
 
-        r = self.telescope_optics.field_radius() * self.telescope_state.zoom
+        r = self.telescope_optics.field_radius() * self.telescope_optics.zoom
         x_norm, y_norm, r_deg = self.project_target_to_view(
             target_ra, target_dec, current_ra, current_dec, r, self.telescope_state.roll
         )
@@ -174,14 +174,14 @@ class StarfieldRenderer:
     
     def render(self):
         r = self.telescope_optics.field_radius()
-        ra, dec = self.telescope_state.get_position()
-        nearby = self.search_by_coordinate(ra=ra, dec=dec, radius=r, mag_limit=self.telescope_optics.get_limiting_magnitude())
+        ra, dec = self.telescope_state.position
+        nearby = self.catalog.search_by_coordinate(ra=ra, dec=dec, radius=r, mag_limit=self.telescope_optics.get_limiting_magnitude())
 
         projected = project_to_view(nearby, center_ra=ra, center_dec=dec, radius_deg=r, rotation=self.telescope_state.roll)
-        stars =  self.stars.render_view(projected, self.telescope_optics.zoom)
+        stars =  self.render_view(projected, self.telescope_optics.zoom)
 
         dist = 0
-        if self.target_manager.has_target():
+        if self.target_state.has_target():
             stars, dist = self.add_navigation_overlay(stars)
         return stars, dist
 

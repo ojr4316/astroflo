@@ -1,0 +1,2 @@
+self.input.reset()
+        self.screens[self.state].setup_input()

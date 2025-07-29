@@ -5,8 +5,8 @@ from hardware.renderer import render_menu
 
 class MainMenu(Screen):
 
-    def __init__(self, ui_state):
-        super().__init__(ui_state)
+    def __init__(self, ui_state, screen_input):
+        super().__init__(ui_state, screen_input)
         self.title = "~astroflo"
         self.options = ["Focus", "Alignment", "Target Select", "Navigate"]
         self.selected_y = 0

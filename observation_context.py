@@ -51,7 +51,7 @@ class TelescopeState:
     def _log_coordinates(self):
         if self.logging and self.position is not None:
             with open(coordinate_log, "a", encoding="utf-8") as f:
-                log = f"{self.scope.get_time().utc_strftime('%Y-%m-%d %H:%M:%S')} - {self.scope.get_position()}\n"
+                log = f"{self.scope.get_time().utc_strftime('%Y-%m-%d %H:%M:%S')} - {self.scope.position}\n"
                 f.write(log)
 
     def sky_drift(self, t=1):

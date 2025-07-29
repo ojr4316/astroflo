@@ -10,8 +10,8 @@ from analyzer import analyzer
 
 class FocusScreen(Screen):
 
-    def __init__(self, ui_state: UIState, camera_state: CameraState):
-        super().__init__(ui_state)
+    def __init__(self, ui_state: UIState, screen_input, camera_state: CameraState):
+        super().__init__(ui_state, screen_input)
         self.camera_state = camera_state
 
     def setup_input(self):        
@@ -31,7 +31,9 @@ class FocusScreen(Screen):
         fwhm = analyzer.fwhm_values[-1] if analyzer.fwhm_values else 100.0
         min_fwhm = analyzer.lowest_fwhm if analyzer.lowest_fwhm != float('inf') else 100.0
 
+        latest_image = Image.fromarray(self.camera_state.latest_image).resize((240, 240))
+
         return render_image_with_caption(
-            self.camera_state.latest_image,
+            latest_image,
             f"FWHM: {fwhm:.2f}", f"Min FWHM found: {min_fwhm:.2f}"
         )

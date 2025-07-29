@@ -10,8 +10,8 @@ from hardware.renderer import render_many_text
 
 class DirectionsScreen(Screen):
 
-    def __init__(self, ui_state: UIState, telescope_state: TelescopeState, target_state: TargetState, solver_state: SolverState):
-        super().__init__(ui_state)
+    def __init__(self, ui_state: UIState, screen_input, telescope_state: TelescopeState, target_state: TargetState, solver_state: SolverState):
+        super().__init__(ui_state, screen_input)
         self.telescope_state = telescope_state
         self.target_state = target_state
         self.solver_state = solver_state
@@ -30,7 +30,7 @@ class DirectionsScreen(Screen):
             target_name = self.target_state.name
             target_ra = self.target_state.ra
             target_dec = self.target_state.dec
-            ra, dec = self.telescope_state.get_position()
+            ra, dec = self.telescope_state.position
             alt, az = radec_to_altaz(ra, dec, self.telescope_state.astropy_time(), self.telescope_state.location)
             target_alt, target_az = radec_to_altaz(target_ra, target_dec, self.telescope_state.astropy_time(), self.telescope_state.location)
 

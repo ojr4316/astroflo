@@ -8,8 +8,8 @@ from astronomy.starfield import StarfieldRenderer
 
 class NavigationScreen(Screen):
 
-    def __init__(self, ui_state, telescope_state: TelescopeState, telescope_optics: TelescopeOptics, target_state: TargetState, solver_state: SolverState, starfield_renderer: StarfieldRenderer):
-        super().__init__(ui_state)
+    def __init__(self, ui_state, screen_input, telescope_state: TelescopeState, telescope_optics: TelescopeOptics, target_state: TargetState, solver_state: SolverState, starfield_renderer: StarfieldRenderer):
+        super().__init__(ui_state, screen_input)
         self.ui_state = ui_state
         self.telescope_state = telescope_state
         self.telescope_optics = telescope_optics
@@ -25,20 +25,20 @@ class NavigationScreen(Screen):
         self.screen_input.controls['D']["press"] = self.left   
 
     def left(self):
-        if self.telescope_state.zoom > 1:
-            self.telescope_state.zoom -= 1
+        if self.telescope_optics.zoom > 1:
+            self.telescope_optics.zoom -= 1
         else:
-            self.telescope_state.zoom = 0.5
+            self.telescope_optics.zoom = 0.5
 
     def right(self):
-        if self.telescope_state.zoom < 1:
-            self.telescope_state.zoom = 1
-        elif self.telescope_state.zoom == 1:
-            self.telescope_state.zoom = 2
-        elif self.telescope_state.zoom < 20:
-            self.telescope_state.zoom += 2
+        if self.telescope_optics.zoom < 1:
+            self.telescope_optics.zoom = 1
+        elif self.telescope_optics.zoom == 1:
+            self.telescope_optics.zoom = 2
+        elif self.telescope_optics.zoom < 20:
+            self.telescope_optics.zoom += 2
         else:
-            self.telescope_state.zoom = 20
+            self.telescope_optics.zoom = 20
 
     def alt_select(self):
         self.ui_state.change_screen(ScreenState.MAIN_MENU)
@@ -58,7 +58,7 @@ class NavigationScreen(Screen):
             if self.target_state.has_target():
                 target = f"|{round(dist, 2)}° from FOV"
             top = f"RA:{ra:.3f}|DEC:{dec:.3f} ({(time.time()-self.solver_state.last_solved):.1f}s)"
-            bot = f"{self.telescope_state.roll:.1f}°|{round(1/self.telescope_state.zoom, 2)}X{target}"
+            bot = f"{self.telescope_state.roll:.1f}°|{round(1/self.telescope_optics.zoom, 2)}X{target}"
             return render_image_with_caption(image, top, bot)
         except Exception as e:
             print(f"Error rendering navigation: {e}")

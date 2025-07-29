@@ -5,12 +5,17 @@ import threading
 from observation_context import ObservationContext, CameraState, SolverState, TelescopeState, TargetState
 from capture.fake_camera import FakeCamera
 from solve.fake_solver import FakeSolver
-from hardware.state import UIState
 from hardware.ui import UIManager
 from utils import is_pi, BASE_DIR
 from astronomy.catalog import Catalog
 from astronomy.starfield import StarfieldRenderer
 from analyzer import analyzer
+import matplotlib
+
+# For Star Rendering, Windows really doesn't like Agg for multi-threading
+if os.name != 'nt':
+    matplotlib.use("Agg")
+    # Mac and Linux NEED Agg for multi-threading
 
 drift_field = True
 
@@ -25,7 +30,7 @@ def build_camera(camera_state: CameraState):
         return FakeCamera(camera_state, fake_feed)
 
 def build_solver(solver_state: SolverState, telescope_state: TelescopeState):
-    if is_pi():
+    if False:#is_pi():
         from solve.tetra3 import Tetra3Solver
         return Tetra3Solver(solver_state, telescope_state)
     else:
@@ -63,7 +68,8 @@ def running(telescope_state: TelescopeState):
 def main():
     ctx = ObservationContext()
     catalog = Catalog(ctx.environment)
-    state = UIState()
+
+    try_set_planet(catalog, ctx.target_state, "Jupiter")
 
     starfield = StarfieldRenderer(
         catalog=catalog,
@@ -72,7 +78,7 @@ def main():
         target_state=ctx.target_state
     )
 
-    ui = UIManager(state, ctx, starfield)
+    ui = UIManager(ctx, starfield)
 
     camera = build_camera(ctx.camera_state)
     solver = build_solver(ctx.solver_state, ctx.telescope_state)

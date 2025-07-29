@@ -3,6 +3,7 @@ import numpy as np
 import cv2
 from queue import Queue
 from feedback.image_feedback import ImagingFeedback
+from PIL import Image
 
 class Analyzer:
     def __init__(self):
@@ -182,7 +183,7 @@ class Analyzer:
             image = self.queue.get(block=True)
             if image is None:
                 continue
-            image = image.convert("L")
+            image = Image.fromarray(image).convert("L")
             image = np.array(image)
             self.add_image(image)
             feedback, metrics = self.feedback.classify(image)

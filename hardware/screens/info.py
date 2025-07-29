@@ -9,8 +9,8 @@ from analyzer import analyzer
 
 class InfoScreen(Screen):
 
-    def __init__(self, ui_state: UIState, environment: Environment, telescope_state: TelescopeState, telescope_optics: TelescopeOptics, target_state: TargetState, solver_state: SolverState):
-        super().__init__(ui_state)
+    def __init__(self, ui_state: UIState, screen_input, environment: Environment, telescope_state: TelescopeState, telescope_optics: TelescopeOptics, target_state: TargetState, solver_state: SolverState):
+        super().__init__(ui_state, screen_input)
         self.environment = environment
         self.telescope_state = telescope_state
         self.telescope_optics = telescope_optics

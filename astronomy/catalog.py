@@ -85,7 +85,7 @@ class Catalog:
         star_results = self.stars[within_radius]
         star_results = star_results[star_results['Vmag'] <= mag_limit]
 
-        planets_in_fov = self.ephemeris.get_planets_in_fov(ra, dec, radius)
+        planets_in_fov = self.get_planets_in_fov(ra, dec, radius)
         return self.build_targets(star_results, planets_in_fov)
     
     def build_targets(self, stars, ephem):
@@ -144,7 +144,7 @@ class Catalog:
                 'Name': planet_name,
                 'RAdeg': ra.degrees,
                 'DEdeg': dec.degrees,
-                'Vmag': self.get_planet_magnitude(planet_name),
+                'Vmag': get_planet_magnitude(planet_name),
                 'is_planet': True
             }
         except KeyError:

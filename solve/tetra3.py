@@ -39,11 +39,12 @@ class Tetra3Solver(Solver):
             if self.solver_state.target_pixel is not None: # if target pixel is set, use it
                 target_pixel = (self.solver_state.target_pixel[0], self.solver_state.target_pixel[1])
             result = self.t3.solve_from_centroids(centroids, fov_estimate=self.fov, size=(image.shape[1], image.shape[0]), target_pixel=target_pixel) # much faster than using Image
-            
-            if self.solver_state.target_pixel is not None:
+
+            ra = dec = None
+            if self.solver_state.target_pixel is not None and "RA_target" in result:
                 ra = result['RA_target']
                 dec = result['Dec_target']
-            else:
+            elif "RA" in result:
                 ra = result['RA']
                 dec = result['Dec']
             roll = result['Roll']

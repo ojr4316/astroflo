@@ -1,4 +1,5 @@
 import os
+import time
 import numpy as np
 from queue import Queue
 from abc import ABC, abstractmethod
@@ -22,8 +23,9 @@ class Solver(ABC):
             latest = capturer_queue.get(block=True)
             if latest is None:
                 continue
+            self.solver_state.last_solved = time.time()
+            analyzer.queue.put(latest)
             result = self.solve(latest)
             if result is not None:
                 coord, roll = result
                 self.telescope_state.solve_result(coord, roll)
-                analyzer.queue.put(latest)

@@ -10,8 +10,8 @@ low_res = (640, 480)
 high_res = (4056, 3040)
 
 class RPiCamera(Camera):
-    def __init__(self, camera_state: CameraState, save_dir="captures"):
-        super().__init__(camera_state=camera_state, save_dir=save_dir)
+    def __init__(self, camera_state: CameraState):
+        super().__init__(camera_state=camera_state)
 
         self.picam2 = Picamera2()
         self.config = self.picam2.create_still_configuration(

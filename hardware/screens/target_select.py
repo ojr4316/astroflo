@@ -8,8 +8,8 @@ from observation_context import TargetState, Environment
 
 class TargetSelect(Screen):
 
-    def __init__(self, ui_state: UIState, environment: Environment, target_state: TargetState):
-        super().__init__(ui_state)
+    def __init__(self, ui_state: UIState, screen_input, environment: Environment, target_state: TargetState):
+        super().__init__(ui_state, screen_input)
         self.environment = environment
         self.target_state = target_state
         self.mag_limit = 4

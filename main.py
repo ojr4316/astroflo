@@ -2,7 +2,7 @@ import os
 import time
 from PIL import Image
 import threading
-from observation_context import ObservationContext, CameraState, SolverState, TelescopeState
+from observation_context import ObservationContext, CameraState, SolverState, TelescopeState, TargetState
 from capture.fake_camera import FakeCamera
 from solve.fake_solver import FakeSolver
 from hardware.state import UIState
@@ -30,6 +30,23 @@ def build_solver(solver_state: SolverState, telescope_state: TelescopeState):
         return Tetra3Solver(solver_state, telescope_state)
     else:
         return FakeSolver(solver_state, telescope_state)
+
+def try_set_target(catalog: Catalog, target_state: TargetState, name: str):
+    target = catalog.search_by_name(name)
+    if len(target) > 0:
+        target = target[0]
+        target_state.set_target(target['RAdeg'], target['DEdeg'], target['Name'])
+        print(f"Target set to {target['Name']} at RA: {target['RAdeg']}, DEC: {target['DEdeg']}")
+    else:
+        print(f"Target '{name}' not found in catalog.")
+
+def try_set_planet(catalog: Catalog, target_state: TargetState, name: str):
+    planet = catalog.get_current_position(name)
+    if planet is not None:
+        target_state.set_target(planet['RAdeg'], planet['DEdeg'], planet['Name'])
+        print(f"Target set to {planet['Name']} at RA: {planet['RAdeg']}, DEC: {planet['DEdeg']}")
+    else:
+        print(f"Planet '{name}' not found in catalog.")
 
 last_time = None
 def running(telescope_state: TelescopeState):

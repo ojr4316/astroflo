@@ -1,4 +1,4 @@
-from feedback_classifier.metrics.QualityMetric import QualityMetric, Metric
+from feedback.metrics.QualityMetric import QualityMetric, Metric
 from photutils.detection import DAOStarFinder
 import numpy as np
 from photutils.background import Background2D, MedianBackground

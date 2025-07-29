@@ -1,5 +1,5 @@
-from feedback_classifier.metrics.QualityMetric import Metric
-from feedback_classifier.rules.ClassificationRule import ClassificationRule
+from feedback.metrics.QualityMetric import Metric
+from feedback.rules.ClassificationRule import ClassificationRule
 
 class OverExposedRule(ClassificationRule):
     def __init__(self, saturation_threshold: float = 0.01, priority: int = 100):

@@ -135,7 +135,6 @@ class Catalog:
         return positions
     
     def get_current_position(self, planet_name: str):
-        
         try:
             planet = self.get_planet(planet_name)
             geocentric = self.here().observe(planet).apparent()

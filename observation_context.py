@@ -28,7 +28,7 @@ class CameraState:
     exposure: float = 0.5
     gain: float = 8.0
     latest_image: Image = None
-    fake_image_test: bool = True
+    fake_image_test: bool = False
 
 @dataclass
 class TelescopeState:

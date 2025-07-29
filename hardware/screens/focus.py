@@ -1,10 +1,10 @@
 from PIL import Image
+import numpy as np
+
 from hardware.screens.screen import Screen
 from hardware.state import ScreenState
-
 from hardware.state import UIState
 from observation_context import CameraState
-
 from hardware.renderer import render_many_text, render_image_with_caption
 from analyzer import analyzer
 
@@ -32,7 +32,7 @@ class FocusScreen(Screen):
         min_fwhm = analyzer.lowest_fwhm if analyzer.lowest_fwhm != float('inf') else 100.0
 
         latest_image = Image.fromarray(self.camera_state.latest_image)
-        pixel, value = analyzer.find_brightest(latest_image)
+        pixel, value = analyzer.find_brightest(np.array(latest_image))
         
         # Render small area around the brightest pixel
         half_size = 40
@@ -46,6 +46,6 @@ class FocusScreen(Screen):
         cropped_image = cropped_image.resize((240, 240))
 
         return render_image_with_caption(
-            latest_image,
+            cropped_image,
             f"FWHM: {fwhm:.2f}", f"Min FWHM found: {min_fwhm:.2f}"
         )

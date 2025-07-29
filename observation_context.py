@@ -28,13 +28,12 @@ class CameraState:
     exposure: float = 0.5
     gain: float = 8.0
     latest_image: Image = None
-    fake_image_test: bool = False
+    fake_image_test: bool = True
 
 @dataclass
 class TelescopeState:
     position: tuple = None
     roll: float = 0.0
-    speed: float = 0.0
 
     logging: bool = False
 
@@ -66,8 +65,8 @@ class TelescopeState:
 @dataclass
 class TelescopeOptics:
     focal_length: float = 1200.0 # All measured in mm
-    eyepiece: float = 25.0
     aperture: float = 200.0
+    eyepiece: float = 25.0
     eyepiece_fov: float = 40.0 # Apparent field of view in degrees of eyepiece
     zoom: float = 1.0 # Represent zoom eyepiece or Barlow lens
 

@@ -26,8 +26,8 @@ class TargetSelect(Screen):
                 self.options = self.catalog.get_dsos(self.mag_limit)
             case 2:
                 self.options = self.catalog.get_solar_system()
-
-        self.names = [target['Name'] for target in self.options]
+        if len(self.options) > 0:
+            self.names = [target['Name'] for target in self.options]
         
         self.max_y = len(self.options) - 1
         if self.selected_y > self.max_y:
@@ -60,7 +60,7 @@ class TargetSelect(Screen):
         if self.selected_y > self.max_y:
             print("ERROR: Target selected is out of bounds")
             return
-        self.scope.target_manager.set_target(
+        self.target_state.set_target(
             self.options[self.selected_y]['RAdeg'],
             self.options[self.selected_y]['DEdeg'],
             self.options[self.selected_y]['Name']

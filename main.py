@@ -11,6 +11,7 @@ from astronomy.catalog import Catalog
 from astronomy.starfield import StarfieldRenderer
 from analyzer import analyzer
 import matplotlib
+import numpy as np
 
 # For Star Rendering, Windows really doesn't like Agg for multi-threading
 if os.name != 'nt':
@@ -26,11 +27,11 @@ def build_camera(camera_state: CameraState):
     else:
         file = os.path.normpath(os.path.join(
             BASE_DIR, "test_data", "out_of_focus.jpg"))
-        fake_feed = [Image.open(file)]
+        fake_feed = [np.array(Image.open(file))]
         return FakeCamera(camera_state, fake_feed)
 
 def build_solver(solver_state: SolverState, telescope_state: TelescopeState):
-    if False:#is_pi():
+    if is_pi():
         from solve.tetra3 import Tetra3Solver
         return Tetra3Solver(solver_state, telescope_state)
     else:

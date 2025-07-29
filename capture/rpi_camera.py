@@ -31,10 +31,12 @@ class RPiCamera(Camera):
         self.last_metadata = self.picam2.capture_metadata()            
 
         if self.camera_state.fake_image_test:
-            return np.array(Image.open("./test_data/vega_focus.jpg"))
+            frame = np.array(Image.open("./test_data/test.jpg"))
+            self.queue.put(frame)
+            return frame
 
         self.save_frame(frame)
-        self.queue.put(frame)
+        
         return frame
 
     def configure(self, goal_exposure, goal_gain=2, max_attempts=10):

@@ -22,11 +22,10 @@ from observation_context import SolverState, TelescopeState
 # Actually Cedar
 class Tetra3Solver(Solver):
 
-    def __init__(self, solver_state: SolverState, telescope_state: TelescopeState, fov=22):
+    def __init__(self, solver_state: SolverState, telescope_state: TelescopeState):
         super().__init__(solver_state, telescope_state)
         self.t3 = Tetra3()
         self.cedar_detect = cedar_detect_client.CedarDetectClient()
-        self.fov = fov
 
     def solve(self, image):
         try:
@@ -38,7 +37,7 @@ class Tetra3Solver(Solver):
             target_pixel = None # by default, just solve for center of image
             if self.solver_state.target_pixel is not None: # if target pixel is set, use it
                 target_pixel = (self.solver_state.target_pixel[0], self.solver_state.target_pixel[1])
-            result = self.t3.solve_from_centroids(centroids, fov_estimate=self.fov, size=(image.shape[1], image.shape[0]), target_pixel=target_pixel) # much faster than using Image
+            result = self.t3.solve_from_centroids(centroids, fov_estimate=self.solver_state.fov, size=(image.shape[1], image.shape[0]), target_pixel=target_pixel) # much faster than using Image
 
             ra = dec = None
             if self.solver_state.target_pixel is not None and "RA_target" in result:

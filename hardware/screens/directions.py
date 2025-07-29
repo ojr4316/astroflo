@@ -4,13 +4,13 @@ from utils import distance_descriptor, radec_to_altaz
 from hardware.state import ScreenState
 
 from hardware.state import UIState
-from observation_context import TelescopeState, TargetState, SolverState
+from observation_context import TelescopeState, TargetState, SolverState, Environment
 
 from hardware.renderer import render_many_text
 
 class DirectionsScreen(Screen):
 
-    def __init__(self, ui_state: UIState, screen_input, telescope_state: TelescopeState, target_state: TargetState, solver_state: SolverState):
+    def __init__(self, ui_state: UIState, screen_input, env: Environment, telescope_state: TelescopeState, target_state: TargetState, solver_state: SolverState):
         super().__init__(ui_state, screen_input)
         self.telescope_state = telescope_state
         self.target_state = target_state
@@ -31,8 +31,8 @@ class DirectionsScreen(Screen):
             target_ra = self.target_state.ra
             target_dec = self.target_state.dec
             ra, dec = self.telescope_state.position
-            alt, az = radec_to_altaz(ra, dec, self.telescope_state.astropy_time(), self.telescope_state.location)
-            target_alt, target_az = radec_to_altaz(target_ra, target_dec, self.telescope_state.astropy_time(), self.telescope_state.location)
+            alt, az = radec_to_altaz(ra, dec, self.env.astropy_time(), self.env.astropy_location)
+            target_alt, target_az = radec_to_altaz(target_ra, target_dec, self.env.astropy_time(), self.env.astropy_location)
 
             delta_x = target_az - az
             delta_y = target_alt - alt

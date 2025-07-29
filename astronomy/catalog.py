@@ -12,6 +12,10 @@ ephemeris_file = os.path.join(BASE_DIR, 'data', "de440s.bsp")
 asteroids_file = os.path.join(BASE_DIR, 'data', "sb441-n16.bsp")
 PLANET_NAMES = ["MERCURY", "VENUS", "MARS", "JUPITER", "SATURN", "URANUS", "NEPTUNE", "PLUTO", "SUN", "MOON"]
 
+def alphabetical(targets):
+    targets.sort(key=lambda x: str(x['Name']).upper() if x['Name'] is not None else 'ZZZZZ')
+    return targets
+
 def clean(n) -> str:
     if isinstance(n, list):
         if len(n) > 0:
@@ -203,7 +207,7 @@ class Catalog:
 
     def get_bright_stars(self, mag_limit=6):
         tycho = self.stars
-        stars = tycho[(tycho['Vmag'] <= mag_limit) & (tycho['Name'].filled('') != '') & (tycho['TYC'][0] != 'M')]
+        stars = tycho[(tycho['Vmag'] <= mag_limit) & (tycho['Name'].filled('') != '') & ~(np.char.startswith(tycho['TYC'].astype(str), 'M'))]
         targets = self.build_targets(stars, [])
         ra_values = [target['RAdeg'] for target in targets]
         dec_values = [target['DEdeg'] for target in targets]
@@ -212,7 +216,7 @@ class Catalog:
         mask = alts > self.env.min_visible_altitude
         targets = [targets[i] for i in range(len(targets)) if mask[i]]
 
-        return targets
+        return alphabetical(targets)
     
     def get_dsos(self, mag_limit=15):
         tycho = self.stars
@@ -224,7 +228,7 @@ class Catalog:
         mask = alts > self.env.min_visible_altitude
         targets = [targets[i] for i in range(len(targets)) if mask[i]]
 
-        return targets
+        return alphabetical(targets)
 
     def get_solar_system(self):
         positions_dict = self.get_current_positions()
@@ -253,4 +257,4 @@ class Catalog:
         mask = alts > self.env.min_visible_altitude
         targets = [targets[i] for i in range(len(targets)) if mask[i]]
 
-        return targets
+        return alphabetical(targets)

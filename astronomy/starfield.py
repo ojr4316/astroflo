@@ -1,5 +1,4 @@
 import numpy as np
-import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 from utils import plt_to_img
@@ -7,6 +6,15 @@ from threading import Lock
 from PIL import Image, ImageDraw
 from observation_context import TelescopeState, TelescopeOptics, TargetState
 from astronomy.catalog import Catalog
+
+def has_alpha(s: str) -> bool:
+    return any(c.isalpha() for c in s)
+
+def check_labels(new_pos, labels, min_dist=0.05):
+    for pos in labels:
+        if np.hypot(new_pos[0] - pos[0], new_pos[1] - pos[1]) < min_dist:
+            return False
+    return True
 
 def rotate(x, y, angle_deg):
         angle_rad = np.radians(angle_deg)
@@ -103,9 +111,11 @@ class StarfieldRenderer:
                     ax.plot(x, y, 'o', markersize=size, color='white')
                     
                     # Label bright stars
-                    label_pos = (round(x + 0.03, 1), round(y, 1))
+                    label_pos = (x + 0.05, y + 0.02)
                     name = str(obj['Name']).strip().replace("--", "").upper()
-                    if mag < 6 and label_pos not in labeled_positions and len(name) > 0:
+                    if len(name) == 0:
+                        name = str(obj['TYC'])
+                    if mag < 8 and has_alpha(name) and check_labels(label_pos, labeled_positions) and len(name) > 0:
                         ax.text(*label_pos, name, color='orange', fontsize=15, clip_on=True, fontweight='bold')
                         labeled_positions.add(label_pos)
 

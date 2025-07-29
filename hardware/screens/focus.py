@@ -31,7 +31,19 @@ class FocusScreen(Screen):
         fwhm = analyzer.fwhm_values[-1] if analyzer.fwhm_values else 100.0
         min_fwhm = analyzer.lowest_fwhm if analyzer.lowest_fwhm != float('inf') else 100.0
 
-        latest_image = Image.fromarray(self.camera_state.latest_image).resize((240, 240))
+        latest_image = Image.fromarray(self.camera_state.latest_image)
+        pixel, value = analyzer.find_brightest(latest_image)
+        
+        # Render small area around the brightest pixel
+        half_size = 40
+        y_min = max(0, pixel[0] - half_size)
+        y_max = min(latest_image.height, pixel[0] + half_size)
+        x_min = max(0, pixel[1] - half_size)
+        x_max = min(latest_image.width, pixel[1] + half_size)
+        cropped_image = latest_image.crop((x_min, y_min, x_max, y_max))
+
+        # resize to screen
+        cropped_image = cropped_image.resize((240, 240))
 
         return render_image_with_caption(
             latest_image,

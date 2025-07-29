@@ -4,13 +4,14 @@ from hardware.state import ScreenState
 from hardware.state import UIState
 from hardware.renderer import render_menu
 from observation_context import TargetState, Environment
-
+from astronomy.catalog import Catalog
 
 class TargetSelect(Screen):
 
-    def __init__(self, ui_state: UIState, screen_input, environment: Environment, target_state: TargetState):
+    def __init__(self, ui_state: UIState, screen_input, environment: Environment, catalog: Catalog, target_state: TargetState):
         super().__init__(ui_state, screen_input)
         self.environment = environment
+        self.catalog = catalog
         self.target_state = target_state
         self.mag_limit = 4
         self.selected_y = 0
@@ -18,13 +19,13 @@ class TargetSelect(Screen):
         self.names = []
 
     def build_options(self):
-        match self.ui.selected_catalog:
+        match self.target_state.catalog_filter:
             case 0:
-                self.options = self.scope.get_bright_stars(self.mag_limit)
+                self.options = self.catalog.get_bright_stars(self.mag_limit)
             case 1:
-                self.options = self.scope.get_dsos(self.mag_limit)
+                self.options = self.catalog.get_dsos(self.mag_limit)
             case 2:
-                self.options = self.scope.get_solar_system()
+                self.options = self.catalog.get_solar_system()
 
         self.names = [target['Name'] for target in self.options]
         

@@ -94,7 +94,6 @@ class Catalog:
             is_planet = False
             if star['TYC'] is not None and str(star['TYC'])[0] == 'M':
                 is_planet = True # DSOs
-                print("flagging dso as planet")
             name = str(star['Name'])
             if len(str(name).replace("-", "")) == 0:
                 name = str(star['TYC'])
@@ -203,12 +202,12 @@ class Catalog:
         return planets_in_fov
 
     def get_bright_stars(self, mag_limit=6):
-        tycho = self.target_manager.stars.tycho
+        tycho = self.stars
         stars = tycho[(tycho['Vmag'] <= mag_limit) & (tycho['Name'].filled('') != '') & (tycho['TYC'][0] != 'M')]
-        targets = self.target_manager.stars.build_targets(stars, [])
+        targets = self.build_targets(stars, [])
         ra_values = [target['RAdeg'] for target in targets]
         dec_values = [target['DEdeg'] for target in targets]
-        alts, azs = radec_to_altaz(ra_values, dec_values, self.astropy_time(), self.location)
+        alts, azs = radec_to_altaz(ra_values, dec_values, self.env.astropy_time(), self.env.astropy_location)
 
         mask = alts > self.env.min_visible_altitude
         targets = [targets[i] for i in range(len(targets)) if mask[i]]
@@ -216,19 +215,19 @@ class Catalog:
         return targets
     
     def get_dsos(self, mag_limit=15):
-        tycho = self.target_manager.stars.tycho
+        tycho = self.stars
         dsos = tycho[(tycho['Vmag'] <= mag_limit) & (np.char.startswith(tycho['TYC'].astype(str), 'M'))]
-        targets = self.target_manager.stars.build_targets(dsos, [])
+        targets = self.build_targets(dsos, [])
         ra_values = [target['RAdeg'] for target in targets]
         dec_values = [target['DEdeg'] for target in targets]
-        alts, azs = radec_to_altaz(ra_values, dec_values, self.astropy_time(), self.location)
+        alts, azs = radec_to_altaz(ra_values, dec_values, self.env.astropy_time(), self.env.astropy_location)
         mask = alts > self.env.min_visible_altitude
         targets = [targets[i] for i in range(len(targets)) if mask[i]]
 
         return targets
 
     def get_solar_system(self):
-        positions_dict = self.target_manager.ephemeris.get_current_positions()
+        positions_dict = self.get_current_positions()
         
         # Convert dictionary to list of dictionaries
         if isinstance(positions_dict, dict):
@@ -245,11 +244,11 @@ class Catalog:
         else:
             targets_list = positions_dict  # Already a list
         
-        targets = self.target_manager.stars.build_targets([], targets_list)
+        targets = self.build_targets([], targets_list)
 
         ra_values = [target['RAdeg'] for target in targets]
         dec_values = [target['DEdeg'] for target in targets]
-        alts, azs = radec_to_altaz(ra_values, dec_values, self.astropy_time(), self.location)
+        alts, azs = radec_to_altaz(ra_values, dec_values, self.env.astropy_time(), self.env.astropy_location)
 
         mask = alts > self.env.min_visible_altitude
         targets = [targets[i] for i in range(len(targets)) if mask[i]]

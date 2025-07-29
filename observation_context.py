@@ -11,6 +11,7 @@ import astropy.units as u
 import os
 from PIL import Image
 from astronomy.stellarium import StellariumConnection
+from astropy.time import Time as AstropyTime
 
 # File Locations
 offset_file = os.path.join(BASE_DIR, "offset.npy")
@@ -81,7 +82,7 @@ class TelescopeOptics:
     
     def field_radius(self):
         fov = self.eyepiece_fov / self.magnification()
-        return (fov / 2)
+        return (fov / 2) * self.zoom
 
 def load_target_pixel():
     if os.path.exists(offset_file):
@@ -130,7 +131,7 @@ class Environment:
     skyfield_location = wgs84.latlon(rochesterLat, rochesterLong, rochesterElevation)
 
     def astropy_time(self):
-        return self.time.astropy_time()
+        return AstropyTime(self.time.tt, format='jd', scale='tt')
     
     def is_target_visible(self, ra: float, dec: float):
         alt, az = radec_to_altaz(ra, dec, self.astropy_time(), self.astropy_location)

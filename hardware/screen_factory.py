@@ -23,5 +23,5 @@ class ScreenFactory:
             ScreenState.DIRECTIONS: DirectionsScreen(ui_state, screen_input, ctx.telescope_state, ctx.target_state, ctx.solver_state),
             ScreenState.ALIGNMENT: AlignmentScreen(ui_state, screen_input, ctx.camera_state, ctx.solver_state),
             ScreenState.TARGET_LIST: TargetList(ui_state, screen_input, ctx.environment, ctx.target_state),
-            ScreenState.TARGET_SELECT: TargetSelect(ui_state, screen_input, ctx.environment, ctx.target_state)
+            ScreenState.TARGET_SELECT: TargetSelect(ui_state, screen_input, ctx.environment, starfield.catalog, ctx.target_state)
         }

@@ -45,7 +45,7 @@ def project_to_view(objects, center_ra, center_dec, radius_deg, rotation=0, filt
             x_norm = x / radius_rad
             y_norm = y / radius_rad
             
-            if x_norm**2 + y_norm**2 > 1:
+            if filter_by_radius and x_norm**2 + y_norm**2 > 1:
                 continue
             
             results.append({
@@ -99,7 +99,7 @@ class StarfieldRenderer:
                         labeled_positions.add(label_pos)
                 else:
                     # Render stars normally
-                    size = min(max(1, 25 - mag*2), 15)/(1 if zoom == 1 else (zoom*2 if zoom < 1 else zoom/2))
+                    size = min(max(1, 25 - mag*2), 15)/(1 if zoom == 1 else (zoom*2 if zoom < 1 else zoom))
                     ax.plot(x, y, 'o', markersize=size, color='white')
                     
                     # Label bright stars
@@ -129,8 +129,8 @@ class StarfieldRenderer:
         overlay = Image.new("RGBA", (image_size, image_size), (0, 0, 0, 0))
         draw = ImageDraw.Draw(overlay)
 
-        r = self.telescope_optics.field_radius() * self.telescope_optics.zoom
-        x_norm, y_norm, r_deg = project_to_view([{'RAdeg': target_ra, 'DEdeg': target_dec}],
+        r = self.telescope_optics.field_radius()
+        _, x_norm, y_norm, r_deg = project_to_view([{'RAdeg': target_ra, 'DEdeg': target_dec}],
             center_ra=current_ra, center_dec=current_dec, radius_deg=r, rotation=self.telescope_state.roll, filter_by_radius=False
         )[0].values()
         

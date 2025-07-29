@@ -16,7 +16,7 @@ def rotate(x, y, angle_deg):
         y_rot = x * sin_a + y * cos_a
         return x_rot, y_rot
 
-def project_to_view(objects, center_ra, center_dec, radius_deg, rotation=0):
+def project_to_view(objects, center_ra, center_dec, radius_deg, rotation=0, filter_by_radius=True):
         ra0 = np.radians(center_ra)
         dec0 = np.radians(center_dec)
         
@@ -33,7 +33,7 @@ def project_to_view(objects, center_ra, center_dec, radius_deg, rotation=0):
                 continue
                 
             angular_distance = np.degrees(np.arccos(np.clip(cos_c, 0, 1)))
-            if angular_distance > radius_deg:
+            if angular_distance > radius_deg and filter_by_radius:
                 continue
         
             x = -np.cos(dec) * np.sin(delta_ra) / cos_c 
@@ -130,9 +130,9 @@ class StarfieldRenderer:
         draw = ImageDraw.Draw(overlay)
 
         r = self.telescope_optics.field_radius() * self.telescope_optics.zoom
-        x_norm, y_norm, r_deg = self.project_target_to_view(
-            target_ra, target_dec, current_ra, current_dec, r, self.telescope_state.roll
-        )
+        x_norm, y_norm, r_deg = project_to_view([{'RAdeg': target_ra, 'DEdeg': target_dec}],
+            center_ra=current_ra, center_dec=current_dec, radius_deg=r, rotation=self.telescope_state.roll, filter_by_radius=False
+        )[0].values()
         
         center_x, center_y = image_size // 2, image_size // 2
 

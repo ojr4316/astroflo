@@ -1,80 +1,14 @@
-from astropy.io import ascii
-from astropy.table import Table
 import numpy as np
-import time
+import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
-import os
 from utils import plt_to_img
-import threading
-import pandas
-from skyfield.api import Angle
-from utils import is_within_radius
+from threading import Lock
+from PIL import Image, ImageDraw
+from observation_context import TelescopeState, TelescopeOptics, TargetState
+from astronomy.catalog import Catalog
 
-def clean(n) -> str:
-    if n is np.ma.masked:
-        return ''
-    n = str(n)
-    n = n.strip()
-    return n.lower()
-
-class Stars:
-    def __init__(self, ephemeris):
-        self.ephemeris = ephemeris
-        self._render_lock = threading.Lock()
-        start = time.time()
-        print("Loading Tycho catalog...", end=' ')
-        dir = os.path.dirname(os.path.abspath(__file__))
-        file = os.path.normpath(os.path.join(dir, '..', 'data', 'tyc.fits'))
-        self.tycho = Table.read(file)
-        print(f"Done in {time.time() - start:.2f} seconds")
-
-    def search_by_name(self, n: str):
-        n = clean(n)
-        name_col = self.tycho['Name'].filled('')
-        name_strings = np.array([clean(n) for n in name_col])
-
-        results = self.tycho[name_strings == n]
-        return results
-
-    def search_by_coordinate(self, ra: float, dec: float, radius: float = 0.05, mag_limit: float = 13): # FOV in degrees
-        within_radius = is_within_radius(ra, dec, self.tycho['RAdeg'], self.tycho['DEdeg'], radius)
-        star_results = self.tycho[within_radius]
-        star_results = star_results[star_results['Vmag'] <= mag_limit]
-
-        planets_in_fov = self.ephemeris.get_planets_in_fov(ra, dec, radius)
-        return self.build_targets(star_results, planets_in_fov)
-    
-    def build_targets(self, stars, ephem):
-        combined = []
-        for star in stars:
-            is_planet = False
-            if star['TYC'] is not None and str(star['TYC'])[0] == 'M':
-                is_planet = True # DSOs
-                print("flagging dso as planet")
-            name = str(star['Name'])
-            if len(str(name).replace("-", "")) == 0:
-                name = str(star['TYC'])
-            combined.append({
-                'Name': name,
-                'RAdeg': star['RAdeg'],
-                'DEdeg': star['DEdeg'],
-                'Vmag': star['Vmag'],
-                'is_planet': is_planet
-            })
-            
-        for planet in ephem:
-            combined.append(planet)
-        return combined
-
-
-    # will probably combine/add to telescope
-    def radius_from_telescope(self, focal_length: float, eyepiece: float, eyepiece_afov: float):
-        mag = focal_length / eyepiece
-        fov = eyepiece_afov / mag
-        return (fov / 2)
-
-    def rotate(self, x, y, angle_deg):
+def rotate(x, y, angle_deg):
         angle_rad = np.radians(angle_deg)
         cos_a = np.cos(angle_rad)
         sin_a = np.sin(angle_rad)
@@ -82,17 +16,7 @@ class Stars:
         y_rot = x * sin_a + y * cos_a
         return x_rot, y_rot
 
-    def apply_field_rotation(self, x, y, angle_deg):
-        angle_rad = np.radians(angle_deg)
-        cos_a = np.cos(angle_rad)
-        sin_a = np.sin(angle_rad)
-        
-        x_rot = x * cos_a - y * sin_a
-        y_rot = x * sin_a + y * cos_a
-        
-        return x_rot, y_rot
-
-    def project_to_view(self, objects, center_ra, center_dec, radius_deg, rotation=0):
+def project_to_view(objects, center_ra, center_dec, radius_deg, rotation=0):
         ra0 = np.radians(center_ra)
         dec0 = np.radians(center_dec)
         
@@ -115,7 +39,7 @@ class Stars:
             x = -np.cos(dec) * np.sin(delta_ra) / cos_c 
             y = (np.cos(dec0) * np.sin(dec) - np.sin(dec0) * np.cos(dec) * np.cos(delta_ra)) / cos_c
             
-            x, y = self.apply_field_rotation(x, y, rotation)
+            x, y = rotate(x, y, rotation)
 
             radius_rad = np.radians(radius_deg)
             x_norm = x / radius_rad
@@ -133,6 +57,14 @@ class Stars:
         
         return results
 
+class StarfieldRenderer:
+    def __init__(self, catalog: Catalog, telescope_state: TelescopeState, telescope_optics: TelescopeOptics, target_state: TargetState):
+        self.catalog = catalog
+        self.telescope_state = telescope_state
+        self.telescope_optics = telescope_optics
+        self.target_state = target_state
+        self._render_lock = Lock()
+    
     def render_view(self, projected, zoom=1):
         with self._render_lock:
             fig, ax = plt.subplots()
@@ -181,3 +113,77 @@ class Stars:
             plt.axis('off')
             matplotlib.pyplot.close()
             return plt_to_img(fig)
+    
+    def add_navigation_overlay(self, image: Image):
+        current_ra, current_dec = self.telescope_state.get_position()
+        if current_ra is None:
+            return None, 0
+
+        if not self.target_state.has_target():
+            return None, 0
+
+        target_ra = self.target_state.ra
+        target_dec = self.target_state.dec
+
+        image_size = 240
+        overlay = Image.new("RGBA", (image_size, image_size), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(overlay)
+
+        r = self.telescope_optics.field_radius() * self.telescope_state.zoom
+        x_norm, y_norm, r_deg = self.project_target_to_view(
+            target_ra, target_dec, current_ra, current_dec, r, self.telescope_state.roll
+        )
+        
+        center_x, center_y = image_size // 2, image_size // 2
+
+        if r_deg <= r:
+            # Target in field of view - use projected coordinates
+            # Convert from normalized coordinates (-1 to 1) to pixel coordinates
+            # Note: y-axis is flipped in image coordinates (top-left origin)
+            pixel_x = center_x + x_norm * (image_size // 2)
+            pixel_y = center_y - y_norm * (image_size // 2)  # Flip y-axis
+            
+            draw.ellipse(
+                (pixel_x - 8, pixel_y - 8, pixel_x + 8, pixel_y + 8),
+                outline="green", width=3
+            )
+            draw.line((pixel_x - 15, pixel_y, pixel_x + 15, pixel_y), fill="green", width=2)
+            draw.line((pixel_x, pixel_y - 15, pixel_x, pixel_y + 15), fill="green", width=2)
+        else:
+            # Target is outside FOV - draw directional arrow using projected coordinates
+            direction_len = np.sqrt(x_norm**2 + y_norm**2)
+            if direction_len > 0:
+                x_dir = x_norm / direction_len
+                y_dir = y_norm / direction_len
+                
+                max_arrow_len = image_size // 2 - 10
+                end_x = center_x + x_dir * max_arrow_len
+                end_y = center_y - y_dir * max_arrow_len
+
+                color = (255, 0, 0, 100)
+                draw.line((center_x, center_y, end_x, end_y), fill=color, width=3)
+                draw.ellipse(
+                    (end_x - 5, end_y - 5, end_x + 5, end_y + 5),
+                    fill=color
+                )
+
+        image.convert("RGBA")
+        image.alpha_composite(overlay)
+        image.convert("RGB")
+        return image, r_deg
+    
+    def render(self):
+        r = self.telescope_optics.field_radius()
+        ra, dec = self.telescope_state.get_position()
+        nearby = self.search_by_coordinate(ra=ra, dec=dec, radius=r, mag_limit=self.telescope_optics.get_limiting_magnitude())
+
+        projected = project_to_view(nearby, center_ra=ra, center_dec=dec, radius_deg=r, rotation=self.telescope_state.roll)
+        stars =  self.stars.render_view(projected, self.telescope_optics.zoom)
+
+        dist = 0
+        if self.target_manager.has_target():
+            stars, dist = self.add_navigation_overlay(stars)
+        return stars, dist
+
+
+                  

@@ -1,14 +1,17 @@
 from hardware.screens.screen import Screen
 from hardware.state import ScreenState
 
+from hardware.state import UIState
+from hardware.renderer import render_menu
+from observation_context import TargetState, Environment
+
 class TargetList(Screen):
 
-    def __init__(self, ui):
-        super().__init__(ui)
-        self.title = "Target Lists"
-        self.scope = ui.scope
+    def __init__(self, ui_state: UIState, environment: Environment, target_state: TargetState):
+        super().__init__(ui_state)
+        self.environment = environment
+        self.target_state = target_state
         self.mag_limit = 6
-        self.only_dsos = True
         self.selected_y = 0
         self.options = ["Bright Stars", "Messier", "Solar System"]
         self.max_y = len(self.options) - 1
@@ -33,12 +36,11 @@ class TargetList(Screen):
             self.selected_y = 0
 
     def select(self):
-        # TODO: communicate to separate ui screen about selected target list
-        self.ui.selected_catalog = self.selected_y
-        self.ui.change_screen(ScreenState.TARGET_SELECT)
+        self.target_state.catalog_filter = self.selected_y
+        self.ui_state.change_screen(ScreenState.TARGET_SELECT)
 
     def alt_select(self):
-        self.ui.change_screen(ScreenState.MAIN_MENU)
+        self.ui_state.change_screen(ScreenState.MAIN_MENU)
 
     def render(self):
-        return self.renderer.render_menu(f"{self.title}", self.options, self.selected_y)
+        return render_menu(f"Catalog?", self.options, self.selected_y)

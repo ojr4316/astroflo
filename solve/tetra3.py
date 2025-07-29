@@ -17,12 +17,13 @@ else:
 
 from tetra3.tetra3 import Tetra3
 from tetra3 import cedar_detect_client
+from observation_context import SolverState, TelescopeState
 
 # Actually Cedar
 class Tetra3Solver(Solver):
 
-    def __init__(self, fov=22):
-        super().__init__()
+    def __init__(self, solver_state: SolverState, telescope_state: TelescopeState, fov=22):
+        super().__init__(solver_state, telescope_state)
         self.t3 = Tetra3()
         self.cedar_detect = cedar_detect_client.CedarDetectClient()
         self.fov = fov
@@ -33,17 +34,20 @@ class Tetra3Solver(Solver):
             if image.ndim == 3:
                 image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
             centroids = self.cedar_detect.extract_centroids(image, sigma=8, use_binned=True)
-            target_pixel = None
-            if self.target_pixel is not None:
-                target_pixel = (self.target_pixel[0], self.target_pixel[1])
+
+            target_pixel = None # by default, just solve for center of image
+            if self.solver_state.target_pixel is not None: # if target pixel is set, use it
+                target_pixel = (self.solver_state.target_pixel[0], self.solver_state.target_pixel[1])
             result = self.t3.solve_from_centroids(centroids, fov_estimate=self.fov, size=(image.shape[1], image.shape[0]), target_pixel=target_pixel) # much faster than using Image
-            if self.target_pixel is not None:
+            
+            if self.solver_state.target_pixel is not None:
                 ra = result['RA_target']
                 dec = result['Dec_target']
             else:
                 ra = result['RA']
                 dec = result['Dec']
             roll = result['Roll']
+            
             if ra is not None:
                  coords = (ra, dec)
                  return (coords, roll)   

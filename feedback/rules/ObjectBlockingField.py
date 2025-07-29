@@ -1,11 +1,10 @@
 from feedback_classifier.metrics.QualityMetric import Metric
 from feedback_classifier.rules.ClassificationRule import ClassificationRule
 
-class CapOnRule(ClassificationRule):
-    def __init__(self, min_stars: int = 7, min_snr: float = 2.0, priority: int = 100):
+class ObjectBlockingField(ClassificationRule):
+    def __init__(self, min_snr: float = 1.0, priority: int = 5):
         super().__init__(priority)
-        self.min_stars = min_stars
         self.min_snr = min_snr
 
     def evaluate(self, metrics: dict) -> bool:
-        return metrics.get(Metric.SNR) < self.min_snr
+        return metrics.get(Metric.SNR, 0) < self.min_snr

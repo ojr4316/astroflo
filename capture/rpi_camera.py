@@ -1,17 +1,17 @@
-from capture.camera import Camera
 import time
+from capture.camera import Camera
 from picamera2 import Picamera2
-from operation import OperationManager
 from PIL import Image
 import numpy as np
+from observation_context import CameraState
 
 square = (512, 512)
 low_res = (640, 480)
 high_res = (4056, 3040)
 
 class RPiCamera(Camera):
-    def __init__(self, save_dir="captures"):
-        super().__init__(save_dir=save_dir)
+    def __init__(self, camera_state: CameraState, save_dir="captures"):
+        super().__init__(camera_state=camera_state, save_dir=save_dir)
 
         self.picam2 = Picamera2()
         self.config = self.picam2.create_still_configuration(
@@ -30,10 +30,11 @@ class RPiCamera(Camera):
         frame = self.picam2.capture_array()
         self.last_metadata = self.picam2.capture_metadata()            
 
-        if not OperationManager.use_real_images:
+        if self.camera_state.fake_image_test:
             return np.array(Image.open("./test_data/vega_focus.jpg"))
-        if OperationManager.save_over:
-            self.save_frame(frame)
+
+        self.save_frame(frame)
+        self.queue.put(frame)
         return frame
 
     def configure(self, goal_exposure, goal_gain=2, max_attempts=10):
@@ -79,5 +80,3 @@ class RPiCamera(Camera):
         super().stop()
         self.picam2.stop()
         print("Camera controller stopped!")
- 
- 

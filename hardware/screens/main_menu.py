@@ -1,10 +1,12 @@
 from hardware.screens.screen import Screen
 from hardware.state import ScreenState
 
+from hardware.renderer import render_menu
+
 class MainMenu(Screen):
 
-    def __init__(self, ui):
-        super().__init__(ui)
+    def __init__(self, ui_state):
+        super().__init__(ui_state)
         self.title = "~astroflo"
         self.options = ["Focus", "Alignment", "Target Select", "Navigate"]
         self.selected_y = 0
@@ -19,16 +21,16 @@ class MainMenu(Screen):
 
     def select(self):
         match self.selected_y:
-            case 0: self.ui.change_screen(ScreenState.FOCUS)
-            case 1: self.ui.change_screen(ScreenState.ALIGNMENT)
-            case 2: self.ui.change_screen(ScreenState.TARGET_LIST)
-            case 3: self.ui.change_screen(ScreenState.NAVIGATE)
+            case 0: self.ui_state.change_screen(ScreenState.FOCUS)
+            case 1: self.ui_state.change_screen(ScreenState.ALIGNMENT)
+            case 2: self.ui_state.change_screen(ScreenState.TARGET_LIST)
+            case 3: self.ui_state.change_screen(ScreenState.NAVIGATE)
 
     def alt_select(self):
-        self.ui.change_screen(ScreenState.INFO)
+        self.ui_state.change_screen(ScreenState.INFO)
 
     def render(self):
-        return self.renderer.render_menu(self.title, self.options, self.selected_y)
+        return render_menu(self.title, self.options, self.selected_y)
     
     def up(self):        
         if self.selected_y > 0:

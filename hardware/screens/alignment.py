@@ -1,22 +1,26 @@
 from hardware.screens.screen import Screen
 from PIL import Image, ImageDraw
 from hardware.state import ScreenState
+from observation_context import SolverState
+from hardware.renderer import render_image_with_caption, render_many_text
 
 class AlignmentScreen(Screen):
     
-    def __init__(self, ui):
-        super().__init__(ui)
-
+    def __init__(self, ui_state, solver_context: SolverState):
+        super().__init__(ui_state)
+        self.solver_context = solver_context
 
     def setup_input(self):
-        self.current_target = self.ui.pipeline.solver.target_pixel
+        # Acquire current target pixel from context
+        self.current_target = self.solver_context.target_pixel
+
         self.screen_input.controls['A']["press"] = self.select
         self.screen_input.controls['B']["press"] = self.alt_select
 
-        self.screen_input.controls['U']["press"] = self.up
-        self.screen_input.controls['D']["press"] = self.down
-        self.screen_input.controls['L']["press"] = self.right
-        self.screen_input.controls['R']["press"] = self.left
+        self.screen_input.controls['U']["hold"] = self.up
+        self.screen_input.controls['D']["hold"] = self.down
+        self.screen_input.controls['L']["hold"] = self.right
+        self.screen_input.controls['R']["hold"] = self.left
 
     def left(self):
         current_target = self.current_target
@@ -47,19 +51,19 @@ class AlignmentScreen(Screen):
             print(f"Target pixel moved down to {current_target}")
 
     def alt_select(self):
-        self.ui.change_screen(ScreenState.MAIN_MENU)
+        self.ui_state.change_screen(ScreenState.MAIN_MENU)
 
     def select(self):
-        self.pipeline.solver.save_offset(self.current_target)
+        self.solver_context.save_offset(self.current_target)
         print(f"Target pixel set to {self.current_target}")
-        self.ui.change_screen(ScreenState.NAVIGATE)
+        self.ui_state.change_screen(ScreenState.NAVIGATE)
    
     def render(self):
         pipeline = self.pipeline
         current_target = self.current_target
 
         if pipeline.latest_image is None:
-            return self.renderer.render_many_text(["Waiting for first image..."])
+            return render_many_text(["Waiting for first image..."])
         
         if current_target is None:
             #current_target = (512/2, 512/2) # default center
@@ -75,7 +79,7 @@ class AlignmentScreen(Screen):
         draw.ellipse(bbox, outline="blue", width=3)
         latest_image = latest_image.resize((240, 240))
 
-        return self.renderer.render_image_with_caption(
+        return render_image_with_caption(
             latest_image,
             "Alignment"
         )

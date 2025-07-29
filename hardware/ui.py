@@ -1,75 +1,42 @@
 """ State Manager for UI, Controls creating and rendering images, and managing input """
 import time
 import os
-from hardware.renderer import ScreenRenderer
 from hardware.input import Input
 from hardware.adafruit_tft_bonnet import AdafruitTFTBonnet
 
-from hardware.screens.info import InfoScreen
-from hardware.screens.focus import FocusScreen
-from hardware.screens.main_menu import MainMenu
-from hardware.screens.navigation import NavigationScreen
-from hardware.screens.directions import DirectionsScreen
-from hardware.screens.alignment import AlignmentScreen
-from hardware.screens.target_list import TargetList
-from hardware.screens.target_select import TargetSelect
-from hardware.state import ScreenState
+from observation_context import ObservationContext
+from hardware.state import UIState
+from hardware.screen_factory import ScreenFactory
+
+from hardware.renderer import render_many_text
+from astronomy.starfield import StarfieldRenderer
 
 init_text = ['\n', '\n', "~ ASTROFLO ~", "Calibrating camera", "and loading modified", "Tycho catalog.", '\n', '\n', "Please wait 5-10 seconds"]
 
 class UIManager:
-    def __init__(self):
-        self.pipeline = None
-        self.scope = None
-        self.state = ScreenState.MAIN_MENU
-        self.renderer = ScreenRenderer()
+    def __init__(self, state_manager: UIState, context: ObservationContext, starfield: StarfieldRenderer):
+        self.state = state_manager
+        self.context = context
+        self.starfield = starfield
+
         self.input = Input()
         self.screen = AdafruitTFTBonnet()
         self.screen.set_brightness(0.5)
-        self.screen.draw_screen(self.renderer.render_many_text(init_text))
+        self.screen.draw_screen(render_many_text(init_text))
 
-        self.screens = {}
+        self.screen_factory = ScreenFactory()
 
-        self.selected_catalog = 0 # 0: Stars, 1: Messier, 2: Solar System
-
-    def init_pipeline(self, pipeline):
-        self.pipeline = pipeline
-        self.scope = pipeline.scope
-        self.build_screens()
-
-    def build_screens(self):
-        self.screens = {
-            ScreenState.MAIN_MENU: MainMenu(self),
-            ScreenState.INFO: InfoScreen(self),
-            ScreenState.FOCUS: FocusScreen(self),
-            ScreenState.NAVIGATE: NavigationScreen(self),
-            ScreenState.DIRECTIONS: DirectionsScreen(self),
-            ScreenState.ALIGNMENT: AlignmentScreen(self),
-            ScreenState.TARGET_LIST: TargetList(self),
-            ScreenState.TARGET_SELECT: TargetSelect(self)
-        }
-
-    def change_screen(self, screen: ScreenState):
-        self.input.reset()
-        self.state = screen
-        self.screens[self.state].setup_input()
-        match(screen): # TODO: figure out better way to communicate screen state (operation mode) to pipeline
-            case ScreenState.NAVIGATE: self.pipeline.mode = 0
-            case ScreenState.FOCUS: self.pipeline.mode = 1
-            case ScreenState.ALIGNMENT: self.pipeline.mode = 2
-        time.sleep(0.5) # prevent multiple page changes
+        self.screens = self.screen_factory.build_screens(state_manager, context, starfield)
 
     def render(self):
         return self.screens[self.state].render()
     
     def handle_input(self):
-        self.screen.handle_input(self.input)
+        while True:
+            self.screen.handle_input(self.input)
+            time.sleep(0.01)
 
-    def loop(self):
-        if self.pipeline == None or len(self.screens) == 0:
-            time.sleep(0.25)
-            self.loop()
-            return
+    def draw_screen(self):
         if os.name == 'nt' or os.uname().nodename != "rpi":
             return
         while True:

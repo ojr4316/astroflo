@@ -1,12 +1,17 @@
 from hardware.screens.screen import Screen
 from hardware.state import ScreenState
 
+from hardware.state import UIState
+from hardware.renderer import render_menu
+from observation_context import TargetState, Environment
+
+
 class TargetSelect(Screen):
 
-    def __init__(self, ui):
-        super().__init__(ui)
-        self.title = "Targets:"
-        self.scope = ui.scope
+    def __init__(self, ui_state: UIState, environment: Environment, target_state: TargetState):
+        super().__init__(ui_state)
+        self.environment = environment
+        self.target_state = target_state
         self.mag_limit = 4
         self.selected_y = 0
         self.options = []
@@ -59,13 +64,13 @@ class TargetSelect(Screen):
             self.options[self.selected_y]['DEdeg'],
             self.options[self.selected_y]['Name']
         )
-        self.ui.change_screen(ScreenState.NAVIGATE)
+        self.ui_state.change_screen(ScreenState.NAVIGATE)
 
     def alt_select(self):
-        self.ui.change_screen(ScreenState.MAIN_MENU)
+        self.ui_state.change_screen(ScreenState.MAIN_MENU)
 
     def render(self):
-        return self.renderer.render_menu(f"{f'>{self.mag_limit} ' if self.ui.selected_catalog != 2 else ''}{self.title}", self.names, self.selected_y)
+        return render_menu(f"{f'>{self.mag_limit} ' if self.target_state.catalog_filter != 2 else ''}Target?", self.names, self.selected_y)
 
     def increase(self):
         if self.mag_limit < 10:

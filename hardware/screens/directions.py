@@ -1,30 +1,38 @@
 import time
 from hardware.screens.screen import Screen
-from utils import distance_north_east, distance_descriptor, radec_to_altaz, altaz_to_radec
+from utils import distance_descriptor, radec_to_altaz
 from hardware.state import ScreenState
+
+from hardware.state import UIState
+from observation_context import TelescopeState, TargetState, SolverState
+
+from hardware.renderer import render_many_text
 
 class DirectionsScreen(Screen):
 
-    def __init__(self, ui):
-        super().__init__(ui)
+    def __init__(self, ui_state: UIState, telescope_state: TelescopeState, target_state: TargetState, solver_state: SolverState):
+        super().__init__(ui_state)
+        self.telescope_state = telescope_state
+        self.target_state = target_state
+        self.solver_state = solver_state
 
     def setup_input(self):
         self.screen_input.controls['B']["press"] = self.alt_select
 
     def alt_select(self):
-        self.ui.change_screen(ScreenState.NAVIGATE)
+        self.ui_state.change_screen(ScreenState.NAVIGATE)
 
     def render(self):
-        scope = self.pipeline.scope
-        if scope.position is None:
-            return self.renderer.render_many_text(["Waiting for first solve..."])
+        if self.telescope_state.position is None:
+            return render_many_text(["Waiting for first solve..."])
 
-        if scope.target_manager.has_target():
-            target_name = scope.target_manager.name
-            target_ra, target_dec = scope.target_manager.get_target_position()
-            ra, dec = scope.get_position()
-            alt, az = radec_to_altaz(ra, dec, scope.astropy_time(), scope.location)
-            target_alt, target_az = radec_to_altaz(target_ra, target_dec, scope.astropy_time(), scope.location)
+        if self.target_state.has_target():
+            target_name = self.target_state.name
+            target_ra = self.target_state.ra
+            target_dec = self.target_state.dec
+            ra, dec = self.telescope_state.get_position()
+            alt, az = radec_to_altaz(ra, dec, self.telescope_state.astropy_time(), self.telescope_state.location)
+            target_alt, target_az = radec_to_altaz(target_ra, target_dec, self.telescope_state.astropy_time(), self.telescope_state.location)
 
             delta_x = target_az - az
             delta_y = target_alt - alt
@@ -32,7 +40,7 @@ class DirectionsScreen(Screen):
             north = f"North: {distance_descriptor(delta_y)} ({delta_y:.2f}°)"
             east = f"East: {distance_descriptor(delta_x)} ({delta_x:.2f}°)"
 
-            return self.renderer.render_many_text(['\n', 'CURRENT TARGET:', target_name, '\n', north, '\n', east, '\n', f"Last Solve: {(time.time()-self.pipeline.latest_timestamp):.1f}s"])
-        return self.renderer.render_many_text(["No target set."])
+            return render_many_text(['\n', 'CURRENT TARGET:', target_name, '\n', north, '\n', east, '\n', f"Last Solve: {(time.time()-self.solver_state.last_solved):.1f}s"])
+        return render_many_text(["No target set."])
 
     

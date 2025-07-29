@@ -1,3 +1,4 @@
+import time
 from enum import Enum
 
 class ScreenState(Enum):
@@ -9,3 +10,15 @@ class ScreenState(Enum):
     DIRECTIONS = 5
     NAVIGATE = 6
     INFO = 7
+
+class UIState:
+    def __init__(self):
+        self.screen = ScreenState.MAIN_MENU
+        self.screens = {}
+
+    def change_screen(self, screen: ScreenState):
+        self.input.reset()
+        self.state = screen
+        self.screens[self.state].setup_input()
+        time.sleep(0.5) # prevent multiple page changes
+

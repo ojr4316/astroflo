@@ -3,14 +3,13 @@ import numpy as np
 import cv2
 from typing import Dict, List, Tuple
 
-from feedback_classifier.metrics.QualityMetric import QualityMetric, Mean, StdDev, Saturated, Sharpness, SignalToNoiseRatio
-from feedback_classifier.metrics.StarCount import StarCount
-from feedback_classifier.rules.ClassificationRule import ClassificationRule
-from feedback_classifier.rules.CapOnRule import CapOnRule
-from feedback_classifier.rules.OverExposedRule import OverExposedRule
-from feedback_classifier.rules.BlurRule import BlurRule
-from feedback_classifier.rules.ObjectBlockingField import ObjectBlockingField
-
+from feedback.metrics.QualityMetric import QualityMetric, Mean, StdDev, Saturated, Sharpness, SignalToNoiseRatio
+from feedback.metrics.StarCount import StarCount
+from feedback.rules.ClassificationRule import ClassificationRule
+from feedback.rules.CapOnRule import CapOnRule
+from feedback.rules.OverExposedRule import OverExposedRule
+from feedback.rules.BlurRule import BlurRule
+from feedback.rules.ObjectBlockingField import ObjectBlockingField
 
 class ImagingFeedback:
     def __init__(self):
@@ -20,7 +19,7 @@ class ImagingFeedback:
         # Initialize with default metrics to calcuate and rules to justify feedback
         self.add_default_metrics()
         self.add_default_rules()
-    
+
     def add_metric(self, metric: QualityMetric) -> None:
         self.metrics[metric.name] = metric
     
@@ -34,7 +33,6 @@ class ImagingFeedback:
         self.add_metric(Saturated())
         self.add_metric(Sharpness())
         self.add_metric(SignalToNoiseRatio())
-        self.add_metric(StarCount())
     
     def add_default_rules(self) -> None:
         self.add_rule(CapOnRule())
@@ -68,3 +66,5 @@ class ImagingFeedback:
         
         # If no rules match
         return "NONE", metrics
+    
+feedback = ImagingFeedback()

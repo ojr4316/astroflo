@@ -11,6 +11,10 @@ class Input:
             control["press"]()
         elif control["release"] is not None and control["state"] and not value: #Released
             control["release"]()
+
+        if control["hold"] is not None and value: # Held
+            control["hold"]()
+
         control["state"] = value
 
     def update(self, a, b, l, r, u, d, c): 
@@ -28,36 +32,43 @@ class Input:
             'A': {
                 "state": False,
                 "press": None,
-                "release": None
+                "release": None,
+                "hold": None
             },
             'B': {
                 "state": False,
                 "press": None,
-                "release": None
+                "release": None,
+                "hold": None
             },
             'L': {
                 "state": False,
                 "press": None,
-                "release": None
+                "release": None,
+                "hold": None
             },
             'R': {
                 "state": False,
                 "press": None,
-                "release": None
+                "release": None,
+                "hold": None
             },
             'U': {
                 "state": False,
                 "press": None,
-                "release": None
+                "release": None,
+                "hold": None
             },
             'D': {
                 "state": False,
                 "press": None,
-                "release": None
+                "release": None,
+                "hold": None
             },
             'C': {
                 "state": False,
                 "press": None,
-                "release": None
+                "release": None,
+                "hold": None
             }
         }

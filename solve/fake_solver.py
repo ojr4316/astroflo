@@ -1,5 +1,6 @@
 from solve.solver import Solver
 import time
+from observation_context import SolverState, TelescopeState
 
 polaris = (37.80326, 89.2592)
 polaris_wrong2 = (19.05591, 87.1399) # nearby bright star, testing cam offset
@@ -21,6 +22,9 @@ class FakeSolver(Solver):
     
     target = pleiades
     
+    def __init__(self, solver_state: SolverState, telescope_state: TelescopeState):
+        super().__init__(solver_state, telescope_state)
+
     def solve(self, image):
         time.sleep(0.3)
         #self.target = (self.target[0] - 0.1, self.target[1] + 0.3)

@@ -2,8 +2,20 @@ import time
 from hardware.screens.screen import Screen
 from PIL import Image
 from hardware.state import ScreenState
+from hardware.renderer import render_image_with_caption
+from observation_context import TelescopeState, TelescopeOptics, TargetState, SolverState
+from astronomy.starfield import StarfieldRenderer
 
 class NavigationScreen(Screen):
+
+    def __init__(self, ui_state, telescope_state: TelescopeState, telescope_optics: TelescopeOptics, target_state: TargetState, solver_state: SolverState, starfield_renderer: StarfieldRenderer):
+        super().__init__(ui_state)
+        self.ui_state = ui_state
+        self.telescope_state = telescope_state
+        self.telescope_optics = telescope_optics
+        self.target_state = target_state
+        self.solver_state = solver_state
+        self.starfield_renderer = starfield_renderer
 
     def setup_input(self):
         self.screen_input.controls['A']["press"] = self.select
@@ -13,43 +25,41 @@ class NavigationScreen(Screen):
         self.screen_input.controls['D']["press"] = self.left   
 
     def left(self):
-        if self.pipeline.scope.zoom > 1:
-            self.pipeline.scope.zoom -= 1
+        if self.telescope_state.zoom > 1:
+            self.telescope_state.zoom -= 1
         else:
-            self.pipeline.scope.zoom = 0.5
+            self.telescope_state.zoom = 0.5
 
     def right(self):
-        if self.pipeline.scope.zoom < 1:
-            self.pipeline.scope.zoom = 1
-        elif self.pipeline.scope.zoom == 1:
-            self.pipeline.scope.zoom = 2
-        elif self.pipeline.scope.zoom < 20:
-            self.pipeline.scope.zoom += 2
+        if self.telescope_state.zoom < 1:
+            self.telescope_state.zoom = 1
+        elif self.telescope_state.zoom == 1:
+            self.telescope_state.zoom = 2
+        elif self.telescope_state.zoom < 20:
+            self.telescope_state.zoom += 2
         else:
-            self.pipeline.scope.zoom = 20
+            self.telescope_state.zoom = 20
 
     def alt_select(self):
-        self.ui.change_screen(ScreenState.MAIN_MENU)
+        self.ui_state.change_screen(ScreenState.MAIN_MENU)
 
     def select(self):
-        self.ui.change_screen(ScreenState.DIRECTIONS)
+        self.ui_state.change_screen(ScreenState.DIRECTIONS)
 
     def render(self):
-        pipeline = self.pipeline
-        scope = pipeline.scope
         image = Image.new("RGB", (240, 240))
-        if scope.position is None:
-            return self.renderer.render_image_with_caption(image, "Waiting for first solve...")
+        if self.telescope_state.position is None:
+            return render_image_with_caption(image, "Waiting for first solve...")
         try:
-            pos = scope.get_position()
+            pos = self.telescope_state.position
             ra, dec = pos[0], pos[1]
-            image, dist = scope.renderer.render()
+            image, dist = self.starfield_renderer.render()
             target = ""
-            if scope.target_manager.has_target():
+            if self.target_state.has_target():
                 target = f"|{round(dist, 2)}° from FOV"
-            top = f"RA:{ra:.3f}|DEC:{dec:.3f} ({(time.time()-pipeline.latest_timestamp):.1f}s)"
-            bot = f"{scope.viewing_angle:.1f}°|{round(1/scope.zoom, 2)}X{target}"
-            return self.renderer.render_image_with_caption(image, top, bot)
+            top = f"RA:{ra:.3f}|DEC:{dec:.3f} ({(time.time()-self.solver_state.last_solved):.1f}s)"
+            bot = f"{self.telescope_state.roll:.1f}°|{round(1/self.telescope_state.zoom, 2)}X{target}"
+            return render_image_with_caption(image, top, bot)
         except Exception as e:
             print(f"Error rendering navigation: {e}")
-            return self.renderer.render_image_with_caption(image, "Error rendering navigation")
+            return render_image_with_caption(image, "Error rendering navigation")

@@ -4,6 +4,11 @@ import cv2
 import datetime
 import threading
 from enum import Enum
+from observation_context import CameraState
+from queue import Queue
+from utils import BASE_DIR
+
+import time
 
 class GainProfile(Enum):
     HIGH=16.0
@@ -18,8 +23,9 @@ class ExposureProfile(Enum):
 
 class Camera(ABC):
 
-    def __init__(self, save_dir: str = "captures"):
-        self.save_dir = save_dir
+    def __init__(self, camera_state: CameraState):
+        self.camera_state = camera_state
+        self.save_dir = os.path.join(BASE_DIR, "captures")
 
         self.running = False
         self.lock = threading.Lock()
@@ -27,10 +33,8 @@ class Camera(ABC):
         self.save = False
         os.makedirs(self.save_dir, exist_ok=True)
 
-        self.exposure = 1_000_000 #us
-        self.gain = 1.0
-
         self.last_metadata = None
+        self.queue = Queue()
 
     @abstractmethod
     def start(self):
@@ -39,8 +43,8 @@ class Camera(ABC):
     
     @abstractmethod
     def configure(self, exposure: int = 1_000_000, gain: float = 8.0):
-        self.exposure = exposure
-        self.gain = gain
+        self.camera_state.exposure = exposure
+        self.camera_state.gain = gain
 
     @abstractmethod
     def capture(self):
@@ -52,13 +56,17 @@ class Camera(ABC):
         self.running = False
 
     def save_frame(self, frame):
-        #return "/home/owen/astroflo/captures/20250525_002707.jpg"
-
-        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = os.path.join(
             self.save_dir, 
-            "test.jpg"#f"{timestamp}.jpg"
+            "latest.jpg"#f"{timestamp}.jpg"
         )
         cv2.imwrite(filename, cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
         return filename
  
+    def capturer(self): # Run in a separate thread to continuously capture images
+        self.start()
+        while self.running:
+            img = self.capture() # Adds new image to the queue to be processed by the solver/analyzer
+            self.camera_state.latest_image = img
+            time.sleep(0.01)
+        self.stop()

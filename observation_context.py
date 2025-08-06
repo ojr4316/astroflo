@@ -25,7 +25,7 @@ rochesterElevation = 150
 @dataclass
 class CameraState:
     enabled: bool = False
-    exposure: float = 0.5
+    exposure: float = 1.0
     gain: float = 8.0
     latest_image: Image = None
     fake_image_test: bool = False

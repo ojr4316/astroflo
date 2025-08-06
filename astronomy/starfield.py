@@ -140,10 +140,13 @@ class StarfieldRenderer:
         draw = ImageDraw.Draw(overlay)
 
         r = self.telescope_optics.field_radius()
-        _, x_norm, y_norm, r_deg = project_to_view([{'RAdeg': target_ra, 'DEdeg': target_dec}],
+        projected = project_to_view([{'RAdeg': target_ra, 'DEdeg': target_dec}],
             center_ra=current_ra, center_dec=current_dec, radius_deg=r, rotation=self.telescope_state.roll, filter_by_radius=False
-        )[0].values()
-        
+        )
+
+        if not projected:
+            return image, float('inf')
+        _, x_norm, y_norm, r_deg = projected[0].values()
         center_x, center_y = image_size // 2, image_size // 2
 
         if r_deg <= r:

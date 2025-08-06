@@ -20,7 +20,7 @@ from tetra3 import cedar_detect_client
 from observation_context import SolverState, TelescopeState
 
 # Actually Cedar
-class Tetra3Solver(Solver):
+class CedarSolver(Solver):
 
     def __init__(self, solver_state: SolverState, telescope_state: TelescopeState):
         super().__init__(solver_state, telescope_state)

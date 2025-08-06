@@ -18,6 +18,7 @@ class GainProfile(Enum):
 class ExposureProfile(Enum):
     FAST=300_000
     DEFAULT=600_000
+    LIGHT_POL=3_000_000
     LONG=1_500_000
     STACK=10_000_000
 
@@ -67,6 +68,7 @@ class Camera(ABC):
         self.start()
         while self.running:
             img = self.capture() # Adds new image to the queue to be processed by the solver/analyzer
+            self.queue.put(img)
             self.camera_state.latest_image = img
             time.sleep(0.01)
         self.stop()

@@ -56,7 +56,7 @@ class AlignmentScreen(Screen):
         self.ui_state.change_screen(ScreenState.MAIN_MENU)
 
     def select(self):
-        self.solver_context.save_offset(self.current_target)
+        self.solver_state.save_offset(self.current_target)
         print(f"Target pixel set to {self.current_target}")
         self.ui_state.change_screen(ScreenState.NAVIGATE)
    

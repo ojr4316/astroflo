@@ -2,7 +2,7 @@ import time
 from hardware.screens.screen import Screen
 from PIL import Image
 from hardware.state import ScreenState
-from hardware.renderer import render_image_with_caption
+from hardware.renderer import render_image_with_caption, render_many_text
 from observation_context import TelescopeState, TelescopeOptics, TargetState, SolverState
 from astronomy.starfield import StarfieldRenderer
 
@@ -59,6 +59,7 @@ class NavigationScreen(Screen):
                 target = f"|{round(dist, 2)}° from FOV"
             top = f"RA:{ra:.3f}|DEC:{dec:.3f} ({(time.time()-self.solver_state.last_solved):.1f}s)"
             bot = f"{self.telescope_state.roll:.1f}°|{round(1/self.telescope_optics.zoom, 2)}X{target}"
+            
             return render_image_with_caption(image, top, bot)
         except Exception as e:
             print(f"Error rendering navigation: {e}")

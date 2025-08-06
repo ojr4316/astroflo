@@ -32,13 +32,13 @@ def build_camera(camera_state: CameraState):
 
 def build_solver(solver_state: SolverState, telescope_state: TelescopeState):
     if is_pi():
-        from solve.tetra3 import Tetra3Solver
-        return Tetra3Solver(solver_state, telescope_state)
+        from solve.cedar import CedarSolver
+        return CedarSolver(solver_state, telescope_state)
     else:
         return FakeSolver(solver_state, telescope_state)
 
 def try_set_target(catalog: Catalog, target_state: TargetState, name: str):
-    target = catalog.search_by_name(name)
+    target = catalog.search_by_name(name, False)
     if len(target) > 0:
         target = target[0]
         target_state.set_target(target['RAdeg'], target['DEdeg'], target['Name'])
@@ -70,8 +70,8 @@ def main():
     ctx = ObservationContext()
     catalog = Catalog(ctx.environment)
 
-    try_set_planet(catalog, ctx.target_state, "Jupiter")
-
+    #try_set_planet(catalog, ctx.target_state, "Jupiter")
+    #ctx.target_state.set_target(213.915416, 19.1822222, "Arcturus")
     starfield = StarfieldRenderer(
         catalog=catalog,
         telescope_state=ctx.telescope_state,

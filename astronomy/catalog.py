@@ -76,8 +76,9 @@ class Catalog:
         self.cache_time = None
         self.cache_duration = 3
 
-    def search_by_name(self, n: str): # only for dsos
-        n = clean(n)
+    def search_by_name(self, n: str, clean: bool = True): # only for dsos
+        if clean:
+            n = clean(n)
         name_col = self.stars['Name'].filled('')
         name_strings = np.array([clean(n) for n in name_col])
 

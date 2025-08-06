@@ -11,8 +11,7 @@ class Input:
             control["press"]()
         elif control["release"] is not None and control["state"] and not value: #Released
             control["release"]()
-
-        if control["hold"] is not None and value: # Held
+        elif control["hold"] is not None and value: # Held
             control["hold"]()
 
         control["state"] = value

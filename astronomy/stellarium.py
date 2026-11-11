@@ -36,9 +36,9 @@ class StellariumConnection:
         print("Starting Stellarium server...")
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.bind((HOST, PORT))
+                s.bind((self.host, self.port))
                 s.listen(1)
-                print(f"Waiting for Stellarium to connect on port {PORT}...")
+                print(f"Waiting for Stellarium to connect on port {self.port}...")
                 
                 conn, addr = s.accept()
                 with conn:

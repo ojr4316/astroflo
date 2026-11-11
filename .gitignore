@@ -20,3 +20,7 @@ data/tyc_old.fits
 
 # Imaging camera saves
 saves/
+
+# Device-local settings and dev files
+settings.json
+settings.json.tmp

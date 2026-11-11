@@ -24,7 +24,9 @@ class UIManager:
 
         self.screen_input = Input()
         self.screen = AdafruitTFTBonnet()
-        self.screen.set_brightness(0.5)
+        self.display_enabled = True
+        self.brightness = 0.5
+        self.screen.set_brightness(self.brightness)
         self.screen.draw_screen(render_many_text(init_text))
 
         self.screen_factory = ScreenFactory()
@@ -35,6 +37,20 @@ class UIManager:
     def change_input(self, state: ScreenState):
         self.screen_input.reset()
         self.screens[state].setup_input()
+
+    def set_display(self, enabled: bool = None, brightness: float = None):
+        """ Turn the TFT on/off (backlight + rendering) and/or set brightness """
+        if brightness is not None:
+            self.brightness = max(0.0, min(1.0, float(brightness)))
+            self.screen.set_brightness(self.brightness)
+        if enabled is not None and enabled != self.display_enabled:
+            self.display_enabled = bool(enabled)
+            if not self.display_enabled:
+                self.screen.clear()
+            self.screen.set_backlight(self.display_enabled)
+
+    def set_screen(self, state: ScreenState):
+        self.state_manager.change_screen(state)
 
     def current_screen(self):
         return self.screens[self.state_manager.state]
@@ -52,5 +68,8 @@ class UIManager:
         if os.name == 'nt' or os.uname().nodename != "rpi":
             return
         while True:
-            self.screen.draw_screen(self.render())
-            time.sleep(0.01)
+            if self.display_enabled:
+                self.screen.draw_screen(self.render())
+            else:
+                time.sleep(0.2) # Display off: skip rendering, save CPU
+            time.sleep(0.01)

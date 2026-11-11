@@ -40,7 +40,7 @@ class Camera(ABC):
     @abstractmethod
     def start(self):
         self.running = True
-        self.configure(ExposureProfile.DEFAULT.value, GainProfile.HIGH.value)
+        self.configure(int(self.camera_state.exposure), float(self.camera_state.gain)) # From settings (default: DEFAULT exposure, HIGH gain)
     
     @abstractmethod
     def configure(self, exposure: int = 1_000_000, gain: float = 8.0):

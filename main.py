@@ -10,7 +10,10 @@ from utils import is_pi, BASE_DIR
 from astronomy.catalog import Catalog
 from astronomy.starfield import StarfieldRenderer
 from analyzer import analyzer
+from config import SettingsStore
+from capture.capture_store import CaptureStore
 from capture.imaging import ImagingController
+from capture.remote_imaging import ImagingController as RemoteImagingController
 import matplotlib
 import numpy as np
 
@@ -75,8 +78,40 @@ def running(telescope_state: TelescopeState):
         time.sleep(delta)
     time.sleep(0.01)
 
+def start_web(ctx, settings, catalog, camera, ui, starfield):
+    global drift_field
+    try:
+        from web.server import Services, start_web_server
+    except ImportError as e:
+        print(f"Web control disabled (missing dependency: {e})")
+        return None
+
+    store = CaptureStore(max_kept=settings.settings.captures.max_kept)
+
+    def on_imaging_frame(image, meta):
+        tg, ts = ctx.target_state, ctx.telescope_state
+        meta = dict(meta, target=tg.name or None)
+        if ts.position is not None:
+            meta.update(ra=float(ts.position[0]), dec=float(ts.position[1]))
+        return store.save(image, "imaging", meta, save_fits=settings.settings.imaging_camera.save_fits)
+
+    def on_settings_changed(s):
+        global drift_field
+        drift_field = s.integrations.sky_drift
+
+    svc = Services(ctx=ctx, settings=settings, store=store, imaging=RemoteImagingController(on_imaging_frame),
+                   catalog=catalog, finder=camera, ui=ui, starfield=starfield, analyzer=analyzer,
+                   stellarium=ctx.telescope_state.stel, on_settings_changed=on_settings_changed)
+    start_web_server(svc)
+    return svc
+
 def main():
+    global drift_field
+    settings = SettingsStore()
     ctx = ObservationContext()
+    ctx.apply_settings(settings.settings)
+    drift_field = settings.settings.integrations.sky_drift
+    ctx.telescope_state.stel.port = settings.settings.integrations.stellarium_port
     catalog = Catalog(ctx.environment)
 
     #try_set_planet(catalog, ctx.target_state, "Jupiter")
@@ -89,6 +124,7 @@ def main():
     )
 
     ui = UIManager(ctx, starfield)
+    ui.set_display(settings.settings.display.enabled, settings.settings.display.brightness)
 
     camera = build_camera(ctx.camera_state)
     solver = build_solver(ctx.solver_state, ctx.telescope_state)
@@ -113,7 +149,10 @@ def main():
     imaging_thread = threading.Thread(target=imaging.run, daemon=True)
     imaging_thread.start()
 
-    ctx.telescope_state.stel.run_server()
+    if settings.settings.integrations.stellarium_enabled:
+        ctx.telescope_state.stel.run_server()
+
+    start_web(ctx, settings, catalog, camera, ui, starfield)
 
     try:
         while True:

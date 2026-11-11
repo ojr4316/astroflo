@@ -73,6 +73,12 @@ if is_pi():
             self.brightness = int((1.0 - b) * 255)
             self.overlay = Image.new("RGBA", (self.width, self.height), (0, 0, 0, self.brightness))
 
+        def set_backlight(self, on: bool):
+            self.backlight.value = bool(on)
+
+        def clear(self):
+            self.disp.image(Image.new("RGB", (self.width, self.height), (0, 0, 0)))
+
         def draw_screen(self, img):
             self.draw.rectangle((0, 0, self.width, self.height), outline=0, fill=(0, 0, 0))
 
@@ -93,6 +99,8 @@ else: # Fake Screen
             self.height = 240
             print("AdafruitTFTBonnet Not Found, using simulated display")
         def set_brightness(self, b): pass
+        def set_backlight(self, on): pass
+        def clear(self): pass
         def handle_input(self, last_input): pass
         def draw_screen(self, img):
             if img is not None:

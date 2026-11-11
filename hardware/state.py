@@ -10,6 +10,7 @@ class ScreenState(Enum):
     DIRECTIONS = 5
     NAVIGATE = 6
     INFO = 7
+    IMAGING = 8
 
 class UIState:
     def __init__(self):

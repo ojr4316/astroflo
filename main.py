@@ -10,6 +10,7 @@ from utils import is_pi, BASE_DIR
 from astronomy.catalog import Catalog
 from astronomy.starfield import StarfieldRenderer
 from analyzer import analyzer
+from capture.imaging import ImagingController
 import matplotlib
 import numpy as np
 
@@ -29,6 +30,14 @@ def build_camera(camera_state: CameraState):
             BASE_DIR, "test_data", "out_of_focus.jpg"))
         fake_feed = [np.array(Image.open(file))]
         return FakeCamera(camera_state, fake_feed)
+
+def build_imaging_camera():
+    if is_pi():
+        from capture.sv105_camera import SV105Camera
+        return SV105Camera()
+    else:
+        from capture.fake_imaging_camera import FakeImagingCamera
+        return FakeImagingCamera()
 
 def build_solver(solver_state: SolverState, telescope_state: TelescopeState):
     if is_pi():
@@ -99,6 +108,10 @@ def main():
 
     analyzer_thread = threading.Thread(target=analyzer.process)
     analyzer_thread.start()
+
+    imaging = ImagingController(build_imaging_camera(), ctx)
+    imaging_thread = threading.Thread(target=imaging.run, daemon=True)
+    imaging_thread.start()
 
     ctx.telescope_state.stel.run_server()
 

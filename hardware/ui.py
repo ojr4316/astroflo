@@ -8,6 +8,7 @@ from observation_context import ObservationContext
 from hardware.state import UIState, ScreenState
 from hardware.screen_factory import ScreenFactory
 
+from hardware import renderer
 from hardware.renderer import render_many_text
 from astronomy.starfield import StarfieldRenderer
 
@@ -19,6 +20,7 @@ class UIManager:
         self.state_manager.change_input = self.change_input
         self.context = context
         self.starfield = starfield
+        renderer.status_provider = lambda: context.imaging_state.connected
 
         self.screen_input = Input()
         self.screen = AdafruitTFTBonnet()

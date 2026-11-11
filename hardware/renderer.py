@@ -15,7 +15,29 @@ font = ImageFont.truetype(FONT_PATH, 16)
 small_font = ImageFont.truetype(FONT_PATH, 12)
 large_font = ImageFont.truetype(FONT_PATH, 24)
 
+COLOR_STATUS_OK = (0, 200, 0)
+COLOR_STATUS_BAD = (220, 0, 0)
+STATUS_DOT_RADIUS = 5
+STATUS_DOT_MARGIN = 2
+
+# Callable returning True when the imaging camera is connected (set by UIManager). None hides the dot.
+status_provider = None
+
+def draw_status_dot(img: Image.Image):
+    """ Imaging camera connection indicator: green = connected, red = disconnected (top-right corner). """
+    if status_provider is None:
+        return
+    try:
+        connected = bool(status_provider())
+    except Exception:
+        connected = False
+    draw = ImageDraw.Draw(img)
+    r, m = STATUS_DOT_RADIUS, STATUS_DOT_MARGIN
+    box = [WIDTH - m - 2 * r, m, WIDTH - m, m + 2 * r]
+    draw.ellipse(box, fill=COLOR_STATUS_OK if connected else COLOR_STATUS_BAD, outline=COLOR_BLACK)
+
 def _transform(img): # match orientation of the physical screen # TODO: implement at other layer?
+    draw_status_dot(img)
     return img.rotate(-90)
 
 def render_image_with_caption(image: Image.Image, top_caption: str, bot_caption: str = "") -> Image.Image:
@@ -79,7 +101,7 @@ def render_menu(question: str, buttons: list, selected_idx: int, has_back: bool 
         page_text = f"{current_page + 1}/{total_pages}"
         bbox = draw.textbbox((0, 0), page_text, font=small_font)
         w, h = bbox[2] - bbox[0], bbox[3] - bbox[1]
-        draw.text((WIDTH - w - 2, 2), page_text, font=small_font, fill=COLOR_WHITE)
+        draw.text((WIDTH - w - 2 - 2 * (STATUS_DOT_RADIUS + STATUS_DOT_MARGIN), 2), page_text, font=small_font, fill=COLOR_WHITE)
         
         # Up arrow if not on first page
         if current_page > 0:
@@ -138,4 +160,30 @@ def render_many_text(texts: list) -> Image.Image:
         draw.text((WIDTH//2 - w//2, y), text, font=font, fill=COLOR_WHITE)
         y += h + 5
     
+    return _transform(img)
+
+def render_button_panel(title: str, buttons: list, selected_idx: int, lines: list) -> Image.Image:
+    """ Title, a row of buttons (index 0 is "< Back") and status text lines underneath. """
+    img = Image.new("RGB", (WIDTH, HEIGHT), COLOR_BLACK)
+    draw = ImageDraw.Draw(img)
+
+    back_rect = [10, 10, 70, 40]
+    draw.rounded_rectangle(back_rect, radius=8, fill=BTN_SELECTED_COLOR if selected_idx == 0 else BTN_COLOR)
+    draw.text((20, 18), "< Back", font=small_font, fill=COLOR_WHITE)
+    draw.text((85, 12), title, font=large_font, fill=COLOR_WHITE)
+
+    y = 52
+    btn_height = 34
+    for idx, label in enumerate(buttons, start=1):
+        rect = [20, y, WIDTH - 20, y + btn_height]
+        draw.rounded_rectangle(rect, radius=8, fill=BTN_SELECTED_COLOR if idx == selected_idx else BTN_COLOR)
+        bbox = draw.textbbox((0, 0), str(label), font=font)
+        w, h = bbox[2] - bbox[0], bbox[3] - bbox[1]
+        draw.text((WIDTH // 2 - w // 2, y + (btn_height - h) // 2), str(label), font=font, fill=COLOR_WHITE)
+        y += btn_height + 8
+
+    for text in lines:
+        draw.text((12, y), text, font=small_font, fill=COLOR_WHITE)
+        y += 16
+
     return _transform(img)

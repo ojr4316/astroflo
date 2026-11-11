@@ -1,5 +1,7 @@
 import time
+import threading
 from typing import ClassVar
+from dataclasses import field
 from enum import Enum
 import numpy as np
 from dataclasses import dataclass
@@ -29,6 +31,23 @@ class CameraState:
     gain: float = 8.0
     latest_image: Image = None
     fake_image_test: bool = False
+
+@dataclass
+class ImagingState:
+    """Shared state for the SV105 imaging camera. Written by the imaging controller, read by the UI."""
+    connected: bool = False
+    auto_enabled: bool = False
+    exposure_us: float = 0.0
+    gain: float = 0.0
+    target_in_field: bool = False
+    frames_saved: int = 0
+    last_result: str = ""        # e.g. "Saved", "Failed"
+    last_result_time: float = 0.0
+    manual_requested: threading.Event = field(default_factory=threading.Event)
+
+    def set_result(self, result: str):
+        self.last_result = result
+        self.last_result_time = time.time()
 
 @dataclass
 class TelescopeState:
@@ -140,6 +159,7 @@ class ObservationContext:
     def __init__(self):
         self.environment = Environment()
         self.camera_state = CameraState()
+        self.imaging_state = ImagingState()
         self.telescope_state = TelescopeState()
         self.telescope_optics = TelescopeOptics()
         self.solver_state = SolverState()

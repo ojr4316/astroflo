@@ -6,6 +6,7 @@ from hardware.screens.directions import DirectionsScreen
 from hardware.screens.alignment import AlignmentScreen
 from hardware.screens.target_list import TargetList
 from hardware.screens.target_select import TargetSelect
+from hardware.screens.imaging import ImagingScreen
 
 from hardware.state import UIState, ScreenState
 from observation_context import ObservationContext
@@ -23,5 +24,6 @@ class ScreenFactory:
             ScreenState.DIRECTIONS: DirectionsScreen(ui_state, screen_input, ctx.environment, ctx.telescope_state, ctx.target_state, ctx.solver_state),
             ScreenState.ALIGNMENT: AlignmentScreen(ui_state, screen_input, ctx.camera_state, ctx.solver_state),
             ScreenState.TARGET_LIST: TargetList(ui_state, screen_input, ctx.environment, ctx.target_state),
-            ScreenState.TARGET_SELECT: TargetSelect(ui_state, screen_input, ctx.environment, starfield.catalog, ctx.target_state)
+            ScreenState.TARGET_SELECT: TargetSelect(ui_state, screen_input, ctx.environment, starfield.catalog, ctx.target_state),
+            ScreenState.IMAGING: ImagingScreen(ui_state, screen_input, ctx.imaging_state, ctx.target_state),
         }

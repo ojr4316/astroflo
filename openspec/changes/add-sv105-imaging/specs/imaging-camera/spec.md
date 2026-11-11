@@ -90,6 +90,25 @@ In automatic mode the system SHALL adjust exposure and gain from the brightness 
 - **WHEN** a frame's brightness is within the target range
 - **THEN** exposure and gain are left unchanged
 
+#### Scenario: Very bright target (Moon)
+- **WHEN** auto mode starts on a target that saturates the frame (e.g. the Moon) while settings are at maximum exposure and gain
+- **THEN** within a handful of frames gain reaches its minimum and exposure is shortened until brightness is within the target range
+
+#### Scenario: Very dim target (cluster in light-polluted sky)
+- **WHEN** auto mode starts on a dim, background-limited target with short exposure and minimum gain
+- **THEN** exposure is raised to its maximum and gain is then raised until brightness is within range or gain reaches its maximum
+
+### Requirement: Measured camera limits
+The system SHALL provide a tool, run on the Pi with the camera attached, that measures the longest effective exposure and highest effective gain, and the camera SHALL use those measured limits instead of the ranges the device reports whenever a measurement is available.
+
+#### Scenario: Measured limits present
+- **WHEN** a limits measurement exists with a maximum exposure lower than the reported maximum
+- **THEN** automatic mode never requests an exposure above the measured maximum
+
+#### Scenario: No measurement
+- **WHEN** no limits measurement exists
+- **THEN** the ranges reported by the camera are used
+
 ### Requirement: Manual capture
 The system SHALL let the user capture a single frame on demand using the current exposure and gain, regardless of whether a target is selected, a solve exists, or automatic mode is enabled.
 

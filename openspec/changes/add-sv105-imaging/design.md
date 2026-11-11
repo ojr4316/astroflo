@@ -34,6 +34,7 @@ Open the device with `cv2.VideoCapture(index, cv2.CAP_V4L2)`, request 1920×1080
 - `capture/sv105_camera.py`: `SV105Camera(ImagingCamera)` (real driver).
 - `capture/fake_imaging_camera.py`: returns frames from `test_data/` with a simulated connect/disconnect toggle for dev testing.
 - `capture/auto_exposure.py`: pure function `next_settings(frame, exposure, gain, limits) -> (exposure, gain)`.
+- `capture/v4l2_util.py`: device lookup by sysfs name and `v4l2-ctl` parsing (shared with the probe tool).
 - `capture/image_store.py`: pure-ish `ImageStore(base_dir)` with `sanitize(name)`, `path_for(target_or_none, now)` and `save(frame, target_or_none) -> path`.
 - `capture/imaging.py`: `ImagingController` with a `run()` loop, owned by `main.py` on its own thread.
 
@@ -59,13 +60,17 @@ A failed `read()` (returns False) or exception marks the camera disconnected and
 `imaging_radius` = half the diagonal FOV computed from sensor size and `TelescopeOptics.focal_length` (IMX307 5.6×3.2 mm at 1200 mm ≈ 0.31° diagonal → radius ≈ 0.15°), with a small configurable margin factor (default 1.0). Uses the existing `utils.haversine_dist` (returns radians → convert). `TelescopeState.position` already incorporates the camera→telescope alignment, so it represents the scope's optical axis where the SV105 sits.
 
 ### 6. Auto exposure/gain algorithm
-Measure on a downsampled grayscale frame: median brightness `m` (0–255) and saturated fraction `s` (pixels ≥ 250).
-- Target band: `m` in [40, 110], `s` ≤ 0.5%.
-- Too dark: scale exposure by `clamp(target_mid / m, 1.25, 2.0)`; when exposure hits max, raise gain by a step (10% of range).
-- Too bright / saturated: lower gain by a step first; when gain at min, scale exposure down by `clamp(target_mid / m, 0.5, 0.8)`.
-- Within band: unchanged (hysteresis from the band width avoids oscillation).
-Rationale: longer exposure gives better SNR than gain; multiplicative steps converge in a few frames. Thresholds are module constants so they can be tuned in the field.
+Targets range from the Moon (fills the 0.31° field at 1200 mm, very bright) to faint clusters in light-polluted skies (background-limited) — roughly four decades of exposure×gain. Measure on a 4× downsampled grayscale frame: median brightness `m` (0–255; the lunar surface or the sky background) and saturated fraction `s` (pixels ≥ 250).
+- Target band: `m` in [40, 110], `s` ≤ 0.5% (a few saturated stars stay under this; a lunar limb blown out does not).
+- Too dark: scale exposure by `clamp(70 / m, 1.25, 4)`; once exposure is at max, raise gain by 10% of the range (25% when `m` is under half the target).
+- Too bright / saturated: lower gain first by 10% (25% when far off); once gain is at min, scale exposure by `clamp(70 / m, 0.25, 0.8)`; with `s` > 20% the median is meaningless, so use the full 0.25 step.
+- Within band: unchanged (band width gives hysteresis).
+Rationale: longer exposure beats gain for SNR; large multiplicative steps cover Moon→cluster in ~10 frames. Constants live at the top of `capture/auto_exposure.py` for field tuning.
+- *Known limitation:* small bright targets on a dark sky (e.g. planets) can be overexposed, since the median is the sky and the saturated area is below 0.5%. Not a goal of this change.
 - *Alternative:* the existing `Adjuster` (solve success/fail streaks) — wrong signal for imaging; rejected.
+
+### 6b. Measuring real limits on the Pi
+UVC cameras commonly advertise exposures they don't deliver, and long exposures are often capped by the frame interval. `tools/sv105_probe.py` sweeps exposure (geometric ×2 steps at min gain) and gain (11 steps at a mid exposure), recording mean, noise, saturation and frame interval per step. The effective maximum is the last step where signal (or frame time / noise for gain) still grew ≥ 8%. Results go to `data/sv105_limits.json`, which `SV105Camera` loads to override reported ranges, along with resolution/format and supported frame rates. The driver enables `exposure_dynamic_framerate` when present and picks the highest frame rate whose interval fits the exposure, so long exposures aren't silently truncated.
 
 ### 7. Storage
 `saves/` at `BASE_DIR`. Directory `manual` for manual captures, else `sanitize(target_state.name)`. File name `datetime.now().strftime("%Y-%m-%d_%H-%M-%S-") + f"{ms:03d}"` + `.png`, with `_1`, `_2`… suffix on collision. PNG for lossless output; frames converted to BGR for `cv2.imwrite`. A target literally named "manual" would share the manual folder — accepted (unlikely; can prefix later).
@@ -89,5 +94,5 @@ Additive change; no data migration. On the Pi, ensure the user running astroflo 
 
 ## Open Questions
 
-- Exact SV105 exposure/gain control ranges and names under V4L2 on the Pi (measure with `v4l2-ctl --list-ctrls`); only affects constants.
+- Exact SV105 exposure/gain ranges on the Pi: measured by `tools/sv105_probe.py`; only affects `data/sv105_limits.json`.
 - Whether to also save a small JSON sidecar with exposure/gain/RA/Dec per frame (easy follow-up).

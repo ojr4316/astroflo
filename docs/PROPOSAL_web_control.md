@@ -1,8 +1,11 @@
 # Proposal: Local Web Control (Hotspot)
 
+**Status: implemented** — `web/`, `config.py`, `capture/capture_store.py`, `capture/imaging_camera.py`. Run off-Pi with `python -m web.dev_server`; tests: `pytest tests/test_web.py`.
+
 Control and monitor Astroflo from a phone/laptop by joining the Pi's Wi‑Fi hotspot and opening `http://astroflo.local` (or `http://10.42.0.1`). Mirrors and extends the TFT bonnet UI — it does not replace it.
 
 ## Goals
+- Control the **external telescope imaging camera** (ASCOM Alpaca / USB‑UVC): connect, expose, sequences, live loop, abort, FITS + JPEG.
 - View live camera frames, current solved coordinates, target and guidance (N/E offset).
 - Search and set targets (stars, DSOs, solar system, raw RA/Dec).
 - Edit **all** device settings (optics, camera, solver, environment, alignment).
@@ -51,6 +54,11 @@ Plus `avahi-daemon` for `astroflo.local`. Document in `build/SETUP.md`. Optional
 | GET/DELETE | `/api/captures/{id}` | View/download/delete |
 | POST | `/api/alignment` | Set target pixel `{x,y}` (click on frame) → `solver_state.save_offset` |
 | POST | `/api/camera` | `{enabled, exposure, gain, profile}` → `camera.configure` |
+| GET | `/api/imaging` | Telescope camera status (connected, exposing, progress, frame n/N, camera info/temperature) + settings |
+| POST | `/api/imaging/{connect\|disconnect\|abort}` | Connect via configured backend (alpaca / uvc / fake) |
+| POST | `/api/imaging/expose` | `{exposure_s, gain, binning, count, loop, save}` — single, sequence, or continuous live loop |
+| GET | `/api/imaging/frame.jpg`, `/api/imaging/stream` | Latest telescope frame (auto-stretched) / MJPEG |
+| GET | `/api/captures/{id}/image.fits` | Raw FITS for telescope captures (EXPTIME, GAIN, RA/DEC, OBJECT headers) |
 | GET/PUT | `/api/display` | `{enabled, brightness, screen}` — turn TFT on/off (`set_brightness(0)` + skip `draw_screen` loop), set brightness, optionally jump to a `ScreenState` |
 | POST | `/api/system/{restart\|shutdown}` | Service restart / Pi shutdown (confirm in UI) |
 
@@ -59,6 +67,7 @@ Plus `avahi-daemon` for `astroflo.local`. Document in `build/SETUP.md`. Optional
 | Group | Fields | Source today |
 |---|---|---|
 | Optics | focal_length, aperture, eyepiece, eyepiece_fov, zoom | `TelescopeOptics` / `settings.txt` |
+| Imaging camera | backend (none/fake/alpaca/uvc), Alpaca address + device #, UVC index, exposure s, gain, binning, save FITS | new `ImagingCameraSettings` |
 | Camera | enabled, exposure, gain, profile (`ExposureProfile`/`GainProfile`), save frames, fake_image_test | `CameraState`, `Camera` |
 | Solver | fov estimate, target pixel (x,y), solver choice | `SolverState`, `offset.npy` |
 | Alignment | x_offset, y_offset, view_angle | `settings.txt` |
@@ -72,9 +81,10 @@ Plus `avahi-daemon` for `astroflo.local`. Document in `build/SETUP.md`. Optional
 ## UI pages (single page, tabbed, mobile‑first, red/dark night mode)
 1. **Live** — stream, overlay toggle, RA/Dec/Alt/Az, solve status/age, target + arrow and distance (reuse `distance_north_east`), FWHM sparkline for focus.
 2. **Targets** — tabs Stars/DSOs/Solar/Coords, search, mag slider, "visible only", tap to set; current target pinned.
-3. **Captures** — "Take image" button, gallery grid, detail with metadata + download.
-4. **Align** — tap frame to set target pixel, nudge buttons, save.
-5. **Settings** — grouped forms per table above, Save / Revert, system restart/shutdown.
+3. **Imaging** — telescope camera connect, exposure/gain/bin/count, Expose / Live loop / Abort, progress bar, latest frame.
+4. **Captures** — "Take image" button, gallery grid, detail with metadata + download.
+5. **Align** — tap frame to set target pixel, nudge buttons, save.
+6. **Settings** — grouped forms per table above, Save / Revert, system restart/shutdown.
 
 ## Implementation plan
 1. `config.py` + settings persistence; wire into `ObservationContext` (no behaviour change).
@@ -97,4 +107,6 @@ Plus `avahi-daemon` for `astroflo.local`. Document in `build/SETUP.md`. Optional
 ## Decisions
 - **Framework:** FastAPI.
 - **Pi display:** web UI can enable/disable the TFT (and set brightness/screen).
-- **Captures:** keep most recent N only (ring buffer, N configurable).
+- **Captures:** keep most recent N only (ring buffer, N configurable); covers finder + telescope camera.
+- **Telescope camera:** pluggable backend — ASCOM Alpaca (alpyca, already a dependency), USB/UVC via OpenCV, simulated.
+- **Web port:** 8080 (no root needed); configurable under Settings → web.

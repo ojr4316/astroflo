@@ -1,6 +1,7 @@
 import time
+import threading
 from typing import ClassVar
-from enum import Enum
+from enum import IntEnum
 import numpy as np
 from dataclasses import dataclass
 from skyfield.api import Time
@@ -25,8 +26,8 @@ rochesterElevation = 150
 @dataclass
 class CameraState:
     enabled: bool = False
-    exposure: float = 1.0
-    gain: float = 8.0
+    exposure: float = 600_000 # microseconds
+    gain: float = 16.0
     latest_image: Image = None
     fake_image_test: bool = False
 
@@ -51,7 +52,7 @@ class TelescopeState:
     def _log_coordinates(self):
         if self.logging and self.position is not None:
             with open(coordinate_log, "a", encoding="utf-8") as f:
-                log = f"{self.scope.get_time().utc_strftime('%Y-%m-%d %H:%M:%S')} - {self.scope.position}\n"
+                log = f"{time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())} - {self.position}\n"
                 f.write(log)
 
     def sky_drift(self, t=1):
@@ -100,10 +101,10 @@ class SolverState:
         np.save(offset_file, offset)
 
 
-class CatalogType(Enum):
-    STARS=0,
-    DSOS=1,
-    SOLAR=2,
+class CatalogType(IntEnum):
+    STARS = 0
+    DSOS = 1
+    SOLAR = 2
 
 @dataclass
 class TargetState:
@@ -132,6 +133,10 @@ class Environment:
     def astropy_time(self):
         return AstropyTime(self.time.tt, format='jd', scale='tt')
     
+    def set_location(self, lat: float, lon: float, elevation: float):
+        self.astropy_location = EarthLocation(lat=lat*u.deg, lon=lon*u.deg, height=elevation*u.m)
+        self.skyfield_location = wgs84.latlon(lat, lon, elevation)
+
     def is_target_visible(self, ra: float, dec: float):
         alt, az = radec_to_altaz(ra, dec, self.astropy_time(), self.astropy_location)
         return alt > self.min_visible_altitude
@@ -144,3 +149,24 @@ class ObservationContext:
         self.telescope_optics = TelescopeOptics()
         self.solver_state = SolverState()
         self.target_state = TargetState()
+        self.lock = threading.RLock() # Guards writes coming from the web server
+
+    def apply_settings(self, settings):
+        """ Push a config.Settings into the live state objects """
+        with self.lock:
+            o = settings.optics
+            self.telescope_optics.focal_length = o.focal_length
+            self.telescope_optics.aperture = o.aperture
+            self.telescope_optics.eyepiece = o.eyepiece
+            self.telescope_optics.eyepiece_fov = o.eyepiece_fov
+            self.telescope_optics.zoom = o.zoom
+
+            self.camera_state.exposure = settings.finder_camera.exposure_us
+            self.camera_state.gain = settings.finder_camera.gain
+            self.camera_state.fake_image_test = settings.finder_camera.fake_image_test
+            self.solver_state.fov = settings.solver.fov
+            self.telescope_state.logging = settings.integrations.coordinate_logging
+
+            loc = settings.location
+            self.environment.set_location(loc.latitude, loc.longitude, loc.elevation)
+            self.environment.min_visible_altitude = loc.min_visible_altitude

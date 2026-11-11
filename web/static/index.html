@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Astroflo Control</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+  <strong>ASTROFLO</strong>
+  <span id="conn" class="pill">offline</span>
+  <button id="night" class="ghost" title="Toggle red night mode">◐</button>
+</header>
+
+<nav id="tabs">
+  <button data-tab="live" class="active">Live</button>
+  <button data-tab="targets">Targets</button>
+  <button data-tab="imaging">Imaging</button>
+  <button data-tab="captures">Captures</button>
+  <button data-tab="align">Align</button>
+  <button data-tab="settings">Settings</button>
+</nav>
+
+<main>
+<!-- LIVE -->
+<section id="tab-live" class="tab active">
+  <div class="grid2">
+    <div class="card">
+      <h3>Finder camera</h3>
+      <img id="finder-img" class="feed" alt="Finder camera">
+      <div class="row">
+        <label><input type="checkbox" id="finder-overlay" checked> overlay</label>
+        <button id="finder-capture">Take image</button>
+      </div>
+      <div class="row">
+        <label>Exposure ms <input type="number" id="finder-exp" min="0.1" step="any"></label>
+        <label>Gain <input type="number" id="finder-gain" min="0" max="64" step="0.5"></label>
+        <button id="finder-apply" class="ghost">Apply</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Position</h3>
+      <dl id="pos"></dl>
+      <h3>Target</h3>
+      <dl id="tgt"></dl>
+      <div id="arrow-wrap"><div id="arrow">➤</div><span id="arrow-dist"></span></div>
+      <h3>Focus</h3>
+      <div id="focus">—</div>
+      <canvas id="fwhm" width="300" height="60"></canvas>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Starfield</h3>
+    <img id="starfield" class="feed small" alt="Starfield">
+    <button id="starfield-refresh" class="ghost">Refresh</button>
+  </div>
+</section>
+
+<!-- TARGETS -->
+<section id="tab-targets" class="tab">
+  <div class="card">
+    <div class="row">
+      <select id="t-type">
+        <option value="stars">Stars</option>
+        <option value="dsos">Deep sky</option>
+        <option value="solar">Solar system</option>
+      </select>
+      <label>Mag ≤ <input type="number" id="t-mag" value="4" min="0" max="15" step="0.5"></label>
+      <input type="search" id="t-q" placeholder="Search name">
+    </div>
+    <p class="muted">Only targets above the minimum altitude are listed.</p>
+    <ul id="t-list" class="list"></ul>
+  </div>
+  <div class="card">
+    <h3>Coordinates</h3>
+    <div class="row">
+      <label>RA° <input type="number" id="t-ra" min="0" max="360" step="any"></label>
+      <label>Dec° <input type="number" id="t-dec" min="-90" max="90" step="any"></label>
+      <input id="t-name" placeholder="Name (optional)">
+      <button id="t-set">Set</button>
+      <button id="t-clear" class="ghost">Clear target</button>
+    </div>
+  </div>
+</section>
+
+<!-- IMAGING (external / telescope camera) -->
+<section id="tab-imaging" class="tab">
+  <div class="card">
+    <h3>Telescope camera <span id="img-state" class="pill">disconnected</span></h3>
+    <p class="muted" id="img-info"></p>
+    <div class="row">
+      <button id="img-connect">Connect</button>
+      <button id="img-disconnect" class="ghost">Disconnect</button>
+      <span class="muted">Backend &amp; address are in Settings → imaging camera</span>
+    </div>
+    <div class="row">
+      <label>Exposure s <input type="number" id="img-exp" min="0.0001" step="any"></label>
+      <label>Gain <input type="number" id="img-gain" min="0" step="1"></label>
+      <label>Bin <select id="img-bin"><option>1</option><option>2</option><option>3</option><option>4</option></select></label>
+      <label>Count <input type="number" id="img-count" value="1" min="1" max="1000"></label>
+      <label><input type="checkbox" id="img-save" checked> save</label>
+    </div>
+    <div class="row">
+      <button id="img-expose">Expose</button>
+      <button id="img-loop" class="ghost">Live loop</button>
+      <button id="img-abort" class="danger">Abort</button>
+    </div>
+    <progress id="img-progress" max="1" value="0"></progress>
+    <div id="img-error" class="error"></div>
+    <img id="img-frame" class="feed" alt="Latest telescope frame">
+  </div>
+</section>
+
+<!-- CAPTURES -->
+<section id="tab-captures" class="tab">
+  <div class="card">
+    <div class="row">
+      <select id="c-source">
+        <option value="">All</option>
+        <option value="imaging">Telescope</option>
+        <option value="finder">Finder</option>
+      </select>
+      <span class="muted" id="c-info"></span>
+      <button id="c-refresh" class="ghost">Refresh</button>
+    </div>
+    <div id="c-grid" class="gallery"></div>
+  </div>
+  <dialog id="c-dialog">
+    <img id="c-full" alt="">
+    <pre id="c-meta"></pre>
+    <div class="row">
+      <a id="c-dl" class="btn" download>Download JPG</a>
+      <a id="c-fits" class="btn" download>Download FITS</a>
+      <button id="c-del" class="danger">Delete</button>
+      <button id="c-close" class="ghost">Close</button>
+    </div>
+  </dialog>
+</section>
+
+<!-- ALIGN -->
+<section id="tab-align" class="tab">
+  <div class="card">
+    <h3>Alignment</h3>
+    <p class="muted">Center a bright star in the eyepiece, then tap it on the finder image to set the target pixel.</p>
+    <div id="align-wrap"><img id="align-img" class="feed" alt="Finder for alignment"></div>
+    <div class="row">
+      <span id="align-px">—</span>
+      <button data-nudge="-1,0" class="ghost">↑</button>
+      <button data-nudge="1,0" class="ghost">↓</button>
+      <button data-nudge="0,-1" class="ghost">←</button>
+      <button data-nudge="0,1" class="ghost">→</button>
+      <button id="align-save">Save</button>
+    </div>
+  </div>
+</section>
+
+<!-- SETTINGS -->
+<section id="tab-settings" class="tab">
+  <div class="card">
+    <h3>Pi display</h3>
+    <div class="row">
+      <label><input type="checkbox" id="d-enabled"> Display on</label>
+      <label>Brightness <input type="range" id="d-bright" min="0" max="1" step="0.05"></label>
+      <label>Screen <select id="d-screen"></select></label>
+    </div>
+  </div>
+  <form id="settings-form"></form>
+  <div class="card row sticky">
+    <button id="s-save">Save settings</button>
+    <button id="s-revert" class="ghost">Revert</button>
+    <span id="s-msg" class="muted"></span>
+  </div>
+  <div class="card">
+    <h3>System</h3>
+    <div class="row">
+      <button data-sys="restart" class="ghost">Restart app</button>
+      <button data-sys="reboot" class="ghost">Reboot</button>
+      <button data-sys="shutdown" class="danger">Shut down</button>
+    </div>
+  </div>
+</section>
+</main>
+<div id="toast"></div>
+<script src="/static/app.js"></script>
+</body>
+</html>

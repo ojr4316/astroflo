@@ -21,3 +21,8 @@ git+https://github.com/esa/tetra3.git
 grpcio
 google
 protobuf
+# Web control
+fastapi
+uvicorn
+websockets
+httpx  # tests (fastapi TestClient)

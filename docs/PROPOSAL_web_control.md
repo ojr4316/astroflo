@@ -22,7 +22,7 @@ Control and monitor Astroflo from a phone/laptop by joining the Pi's Wi‑Fi hot
 ```
 
 - New `web/` package started from `main.py` as one more thread, like `stel.run_server()`. Gets `ctx`, `catalog`, `camera`, `ui_state`.
-- **FastAPI + uvicorn** (async, tiny, gives free `/docs` API explorer). Alternative: Flask if fewer deps preferred.
+- **FastAPI + uvicorn** (async, tiny, gives free `/docs` API explorer).
 - Static frontend in `web/static/` — single `index.html` + vanilla JS, no build step, no CDN (offline).
 - Live updates via **WebSocket** `/ws/state` pushing a JSON snapshot ~2 Hz; images via MJPEG `/stream` (or polled `/api/frame.jpg`).
 - A shared `threading.Lock` on `ObservationContext` for writes from the web thread (state is currently mutated lock‑free).
@@ -51,6 +51,7 @@ Plus `avahi-daemon` for `astroflo.local`. Document in `build/SETUP.md`. Optional
 | GET/DELETE | `/api/captures/{id}` | View/download/delete |
 | POST | `/api/alignment` | Set target pixel `{x,y}` (click on frame) → `solver_state.save_offset` |
 | POST | `/api/camera` | `{enabled, exposure, gain, profile}` → `camera.configure` |
+| GET/PUT | `/api/display` | `{enabled, brightness, screen}` — turn TFT on/off (`set_brightness(0)` + skip `draw_screen` loop), set brightness, optionally jump to a `ScreenState` |
 | POST | `/api/system/{restart\|shutdown}` | Service restart / Pi shutdown (confirm in UI) |
 
 ## Settings covered
@@ -63,7 +64,8 @@ Plus `avahi-daemon` for `astroflo.local`. Document in `build/SETUP.md`. Optional
 | Alignment | x_offset, y_offset, view_angle | `settings.txt` |
 | Environment | lat, lon, elevation, min_visible_altitude, time override | hard‑coded Rochester in `observation_context.py` |
 | Integrations | Stellarium server on/off + port, coordinate logging | `StellariumConnection`, `TelescopeState.logging` |
-| Display | sky drift sim, TFT screen state | `main.py`, `UIState` |
+| Display | TFT enabled, brightness, current screen, sky drift sim | `UIManager`, `AdafruitTFTBonnet`, `UIState`, `main.py` |
+| Captures | max kept (default 50) | new |
 
 **Prerequisite refactor:** `settings.txt` is currently not read anywhere and location is hard‑coded. Introduce `config.py` with a dataclass loaded from/saved to `settings.json` (migrate `settings.txt` + `offset.npy`), applied to `ObservationContext` on boot and on `PUT /api/settings`.
 
@@ -79,10 +81,11 @@ Plus `avahi-daemon` for `astroflo.local`. Document in `build/SETUP.md`. Optional
 2. Context lock + `snapshot()` method returning JSON‑serialisable state.
 3. `web/server.py` with read‑only endpoints (`/api/state`, `/stream`, `/ws/state`) + Live page.
 4. Targets endpoints + page.
-5. Captures: timestamped saves in `captures/` with sidecar JSON metadata (replace overwrite of `latest.jpg`) + page.
-6. Settings + Align + system endpoints/pages.
-7. Hotspot/avahi/systemd docs in `build/SETUP.md`; add `fastapi`, `uvicorn` to `requirements.txt`.
-8. Tests with FastAPI `TestClient` using `FakeCamera`/`FakeSolver` (already work off‑Pi).
+5. Captures: timestamped saves in `captures/` with sidecar JSON metadata, **ring buffer** keeping the most recent N (oldest deleted on save); `latest.jpg` still written for the live view + page.
+6. Display toggle: `UIManager.display_enabled` flag checked in `draw_screen`; disabling blanks the screen and sets backlight to 0, enabling restores brightness. Buttons keep working unless display is off.
+7. Settings + Align + system endpoints/pages.
+8. Hotspot/avahi/systemd docs in `build/SETUP.md`; add `fastapi`, `uvicorn` to `requirements.txt`.
+9. Tests with FastAPI `TestClient` using `FakeCamera`/`FakeSolver` (already work off‑Pi).
 
 ## Risks / notes
 - **CPU on Pi**: JPEG encode per frame — cap stream to ~2 fps, downscale, encode only when a client is connected.
@@ -91,7 +94,7 @@ Plus `avahi-daemon` for `astroflo.local`. Document in `build/SETUP.md`. Optional
 - **Port 80** needs root or `CAP_NET_BIND_SERVICE`; else use 8080.
 - Existing bugs to fix along the way: `TelescopeState._log_coordinates` references `self.scope`; `CatalogType` values are tuples while `TargetSelect` matches ints.
 
-## Open questions
-- FastAPI vs Flask?
-- Should the web UI be able to change the TFT screen, or stay independent?
-- Keep all captures or ring‑buffer (SD card space)?
+## Decisions
+- **Framework:** FastAPI.
+- **Pi display:** web UI can enable/disable the TFT (and set brightness/screen).
+- **Captures:** keep most recent N only (ring buffer, N configurable).

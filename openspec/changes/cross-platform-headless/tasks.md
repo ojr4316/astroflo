@@ -48,4 +48,4 @@
 
 - [x] 7.1 Add `tests/test_smoke.py` (`slow`): run `python main.py --profile sim --duration 8` in a subprocess on a free port with `ASTROFLO_SNAPSHOT_DIR` in tmp; verify exit code 0, the web API answered during the run, and at least one snapshot and one solve were logged
 - [x] 7.2 Add `tests/test_hardware.py` with `pi_only`/`requires_camera` checks for the real finder camera, SV105 and TFT; verify they are skipped with reasons here and documented as `ASTROFLO_HW_TESTS=1 pytest -m "pi_only or requires_camera"` in `build/SETUP.md`
-- [ ] 7.3 Add `.github/workflows/tests.yml` (ubuntu/macos/windows × Python 3.11, 3.13, plus ubuntu 3.10 as the floor; cached `de440s.bsp` when available; `pytest -rs --timeout=300`) plus an ubuntu job with `requirements-solver.txt`; verify all jobs pass on a push to the branch
+- [x] 7.3 Add `.github/workflows/tests.yml` (ubuntu/macos/windows × Python 3.11, 3.13, plus ubuntu 3.10 as the floor; cached `de440s.bsp` when available; `pytest -rs --timeout=300`) plus an ubuntu job with `requirements-solver.txt`; verify all jobs pass on a push to the branch

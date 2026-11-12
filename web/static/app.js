@@ -317,12 +317,25 @@ async function loadDisplay() {
     const d = await api("/api/display");
     $("#d-enabled").checked = d.enabled; $("#d-bright").value = d.brightness;
     $("#d-screen").innerHTML = d.screens.map((s) => `<option ${s === d.screen ? "selected" : ""}>${s}</option>`).join("");
+    $("#d-sim").style.display = d.simulated_input ? "flex" : "none";
+    if (d.simulated_input) startSimFrame();
   } catch (e) { $("#d-enabled").disabled = $("#d-bright").disabled = $("#d-screen").disabled = true; }
 }
 const putDisplay = run(async (body) => { await api("/api/display", { method: "PUT", body }); });
 $("#d-enabled").addEventListener("change", (e) => putDisplay({ enabled: e.target.checked }));
 $("#d-bright").addEventListener("change", (e) => putDisplay({ brightness: +e.target.value }));
 $("#d-screen").addEventListener("change", (e) => putDisplay({ screen: e.target.value }));
+
+// Simulated hardware: live screen + virtual buttons
+let simFrameTimer = null;
+function startSimFrame() {
+  if (simFrameTimer) return;
+  const refresh = () => { if (activeTab === "settings") $("#d-frame").src = `/api/display/frame.png?t=${Date.now()}`; };
+  refresh(); simFrameTimer = setInterval(refresh, 500);
+}
+$$("#d-buttons [data-btn]").forEach((b) => b.addEventListener("click", run(async () => {
+  await api("/api/sim/input", { method: "POST", body: { button: b.dataset.btn, action: "tap" } });
+})));
 
 // ---------- boot ----------
 try { setNight(localStorage.getItem("night") === "1"); const t = localStorage.getItem("tab"); if (t) $(`#tabs [data-tab="${t}"]`)?.click(); } catch {}

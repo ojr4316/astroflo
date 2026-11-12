@@ -58,7 +58,7 @@ In the `sim` profile the UI SHALL render screens continuously into an in-memory 
 The system SHALL accept simulated presses, releases and holds of the seven TFT buttons (A, B, L, R, U, D, C) through the same input handling as the physical buttons, from code, from a scripted sequence, and from the web API in the `sim` profile.
 
 #### Scenario: Navigate menu from a script
-- **WHEN** a script presses D then A on the main menu
+- **WHEN** a script moves down one item (the L button on the rotated screen) and then presses A on the main menu
 - **THEN** the UI changes to the screen of the second menu item, exactly as with physical buttons
 
 #### Scenario: Web input in sim

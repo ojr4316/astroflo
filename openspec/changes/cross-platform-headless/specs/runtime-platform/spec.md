@@ -7,7 +7,7 @@ Defines how astroflo chooses between real Raspberry Pi hardware and simulated ha
 ## ADDED Requirements
 
 ### Requirement: Runtime profile selection
-The system SHALL run in one of two profiles: `pi` (real hardware) or `sim` (simulated hardware). The profile SHALL be taken from, in order: the `ASTROFLO_PROFILE` environment variable, then the saved settings, then automatic detection of a Raspberry Pi. The chosen profile SHALL be printed at startup.
+The system SHALL run in one of two profiles: `pi` (real hardware) or `sim` (simulated hardware). The profile SHALL be taken from, in order: the `--profile` command-line option, the `ASTROFLO_PROFILE` environment variable, then the saved settings, then automatic detection of a Raspberry Pi. The chosen profile SHALL be printed at startup.
 
 #### Scenario: Default on a development machine
 - **WHEN** astroflo starts on a non-Pi machine with no profile set

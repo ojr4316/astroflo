@@ -29,7 +29,7 @@ class InfoScreen(Screen):
 
     def render(self):
         t = self.environment.time
-        location = self.environment.location
+        location = self.environment.astropy_location
 
         local = pytz.timezone("America/New_York")
         local_time = t.astimezone(local)

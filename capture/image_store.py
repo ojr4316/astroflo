@@ -26,8 +26,8 @@ def timestamp_name(now: datetime.datetime) -> str:
 
 
 class ImageStore:
-    def __init__(self, base_dir: str = DEFAULT_SAVE_DIR):
-        self.base_dir = base_dir
+    def __init__(self, base_dir: Optional[str] = None):
+        self.base_dir = base_dir if base_dir is not None else DEFAULT_SAVE_DIR
 
     def directory_for(self, target: Optional[str]) -> str:
         """ target=None means a manual capture. """

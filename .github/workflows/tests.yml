@@ -1,0 +1,70 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: ${{ matrix.os }} / Python ${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python: ["3.11", "3.13"]
+        include:
+          - os: ubuntu-latest  # lowest supported version (code uses `match`)
+            python: "3.10"
+    env:
+      MPLBACKEND: Agg
+      PYTHONIOENCODING: utf-8
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: requirements*.txt
+
+      # Planet ephemeris is not in the repo: use the cached copy when there is one. On a cache miss,
+      # try to download it once so later runs have it; if that fails, ephemeris tests are skipped.
+      - name: Restore cached ephemeris
+        id: ephemeris
+        uses: actions/cache@v4
+        with:
+          path: data/de440s.bsp
+          key: ephemeris-de440s-v1
+          enableCrossOsArchive: true
+      - name: Download ephemeris (cache miss)
+        if: steps.ephemeris.outputs.cache-hit != 'true'
+        continue-on-error: true
+        shell: bash
+        run: curl -fsSL --retry 3 -o data/de440s.bsp https://ssd.jpl.nasa.gov/ftp/eph/planets/bsp/de440s.bsp || rm -f data/de440s.bsp
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements-dev.txt
+
+      - name: Run tests
+        run: python -m pytest -rs --timeout=300
+
+  solver:
+    name: ubuntu / tetra3 solver tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      MPLBACKEND: Agg
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: requirements*.txt
+      - name: Install dependencies
+        run: python -m pip install -r requirements-dev.txt -r requirements-solver.txt
+      - name: Run solver tests
+        run: python -m pytest -rs --timeout=300 -m requires_tetra3

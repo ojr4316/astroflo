@@ -33,12 +33,12 @@ Add a `RuntimeSettings` section to `config.Settings`:
 runtime:
   profile: auto | pi | sim
   finder_camera: auto | rpi | images
-  imaging_camera: auto | sv105 | fake | alpaca | uvc | none
+  imaging_camera: auto | sv105 | fake | none
   solver: auto | fake | tetra3 | cedar
   display: auto | tft | virtual
   input: auto | gpio | sim
 ```
-`auto` resolves from the profile. Resolution order for profile: `ASTROFLO_PROFILE` env → settings → `is_pi()`. A new `platform_info.py` module holds `resolve_profile()`, `is_pi()`, `is_linux()/is_macos()/is_windows()` and capability probes (`has_v4l2_ctl`, `has_module(name)`); `utils.is_pi` re-exports for compatibility and is fixed to use `platform.node()` (works on Windows).
+`auto` resolves from the profile. Resolution order for profile: `--profile` CLI option → `ASTROFLO_PROFILE` env → settings → `is_pi()`. A new `platform_info.py` module holds `resolve_profile()`, `is_pi()`, `is_linux()/is_macos()/is_windows()` and capability probes (`has_v4l2_ctl`, `has_module(name)`); `utils.is_pi` re-exports for compatibility and is fixed to use `platform.node()` (works on Windows).
 Backends live in a small registry (`backends.py`) mapping name → (factory, `available()` check). An unavailable explicit choice raises with a reason (spec: no silent fallback).
 *Alternatives:* CLI flags only (not persisted, awkward for the Pi service); keep hostname check (no way to force sim on Pi or real solver on laptop).
 *Note:* the existing `imaging_camera.backend` setting (used by the web remote imaging controller) is kept; `runtime.imaging_camera` covers the on-device `ImagingController`. Merging the two is left for later.
@@ -83,6 +83,7 @@ In `tests/conftest.py` register markers and a `pytest_collection_modifyitems` ho
 | `linux_only` / `macos_only` / `windows_only` | `sys.platform` matches |
 | `pi_only` | `platform_info.is_pi()` |
 | `requires_camera` | `ASTROFLO_HW_TESTS=1` **and** a camera is detected (finder: `picamera2` importable + device; imaging: SV105 found) |
+| `requires_tft` | `ASTROFLO_HW_TESTS=1` **and** on the Pi with the Adafruit packages importable |
 | `requires_v4l2` | Linux and `v4l2-ctl` on PATH |
 | `requires_tetra3` | `tetra3` importable |
 | `requires_ephemeris` | `data/de440s.bsp` present |
@@ -93,13 +94,13 @@ Camera detection is opt-in (`ASTROFLO_HW_TESTS`) so a laptop webcam is never mis
 New/expanded test modules: `test_platform.py` (profile resolution, backend availability errors), `test_sim_cameras.py`, `test_virtual_display.py`, `test_sim_input.py` (menu navigation for every screen), `test_screens_render.py` (parametrized over `ScreenState`), `test_solver_pipeline.py` (fake + tetra3), `test_catalog.py` (missing data + real data with `requires_ephemeris`), `test_web.py` (sim input, system action rejection), `test_smoke.py` (`python main.py --profile sim --duration 8` in a subprocess, `slow`), `test_hardware.py` (`pi_only`/`requires_camera` real-device checks moved from `tools/sv105_probe.py` logic).
 
 ### D10. CI
-`.github/workflows/tests.yml`: matrix `os: [ubuntu-latest, macos-latest, windows-latest]`, `python: ["3.11", "3.13"]`; `pip install -r requirements-dev.txt`; `pytest -rs --timeout=120`. A second job on ubuntu also installs `requirements-solver.txt` to run `requires_tetra3` tests. Ephemeris-dependent tests stay skipped in CI unless the file is cached (optional follow-up).
+`.github/workflows/tests.yml`: matrix `os: [ubuntu-latest, macos-latest, windows-latest]` × `python: ["3.11", "3.13"]`, plus ubuntu/3.10 as the lowest supported version (the code uses `match`, so 3.10 is the floor; the Pi's version is unknown and Pi OS Bookworm ships 3.11). `pip install -r requirements-dev.txt`; `pytest -rs --timeout=300`. `data/de440s.bsp` comes from an `actions/cache` entry when one exists; on a cache miss the job tries one download (continue-on-error) so the cache gets filled, and ephemeris tests are skipped if that fails. A second ubuntu job installs `requirements-solver.txt` and runs the `requires_tetra3` tests.
 
 ## Risks / Trade-offs
 
 - [Agg on Windows threads previously reported unstable] → Keep the `MPLBACKEND` override; CI on Windows runs the smoke test; render calls already go through `StarfieldRenderer`'s lock.
 - [tetra3 install from Git is slow/fragile] → Only in the optional solver job; core suite never needs it.
-- [No recorded star-field image with known coordinates in `test_data/`] → Add one small image with its expected RA/Dec to `test_data/` (or generate a synthetic field from the Tycho catalog) for the tetra3 test.
+- [Need recorded star fields with known coordinates] → `vega_focus.jpg`, `test.jpg` and `bright_sky.jpg` in `test_data/` already solve with tetra3; their solved centers are the test expectations.
 - [`opencv-python` → `-headless` swap on the Pi] → Pi keeps whatever `requirements_pi.txt` pins; both provide `cv2`.
 - [Moving tests' file writes to tmp needs module constants to be patchable] → Prefer constructor/`path` arguments (as `SettingsStore` and `CaptureStore` already do) over monkeypatching where possible.
 - [Real-hardware behavior can diverge from simulation] → `pi_only`/`requires_camera` tests kept and run on the Pi with `ASTROFLO_HW_TESTS=1`.
@@ -114,5 +115,4 @@ Rollback: settings default to `auto`, so reverting any step restores current beh
 
 ## Open Questions
 
-- Which Python versions should CI cover beyond 3.11 and 3.13 (does the Pi run 3.11)? Can be adjusted in the workflow later.
-- Whether to cache `de440s.bsp` in CI to run ephemeris tests there.
+- Which Python version the Pi runs is unknown; CI covers 3.10 (floor), 3.11 and 3.13, so any of them works.

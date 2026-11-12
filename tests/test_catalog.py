@@ -54,5 +54,6 @@ def test_planets_with_real_ephemeris(monkeypatch, stars):
     assert cat.has_ephemeris
     jupiter = cat.get_current_position("JUPITER")
     assert 0 <= jupiter["RAdeg"] < 360 and -30 < jupiter["DEdeg"] < 30
-    names = [t["Name"] for t in cat.get_solar_system()]
-    assert "MOON" in names
+    assert {"MOON", "SUN", "MARS"} <= set(cat.get_current_positions())  # all positions, visible or not
+    for target in cat.get_solar_system():  # only what is above the horizon now
+        assert target["is_planet"] and 0 <= target["RAdeg"] < 360

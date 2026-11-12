@@ -1,5 +1,6 @@
 """ Local web control for Astroflo. Join the device hotspot and open http://<pi-ip>:<port>/ """
 import asyncio
+import io
 import os
 import subprocess
 import threading
@@ -16,6 +17,7 @@ from pydantic import BaseModel, Field, ValidationError
 
 from capture.capture_store import CaptureStore, jpeg_bytes, to_preview
 from capture.remote_imaging import ImagingController
+import platform_info
 from config import SettingsStore
 from observation_context import ObservationContext
 from utils import distance_north_east, haversine_dist, radec_to_altaz
@@ -62,6 +64,12 @@ class ExposeBody(BaseModel):
 class AlignmentBody(BaseModel):
     row: int = Field(..., ge=0)   # target pixel, (row, col) like SolverState.target_pixel
     col: int = Field(..., ge=0)
+
+
+class SimInputBody(BaseModel):
+    button: Literal["A", "B", "L", "R", "U", "D", "C"]
+    action: Literal["tap", "press", "release", "hold"] = "tap"
+    seconds: float = Field(0.5, gt=0, le=10)  # hold duration
 
 
 class DisplayBody(BaseModel):
@@ -395,11 +403,44 @@ def create_app(svc: Services) -> FastAPI:
             raise HTTPException(503, "Display not available")
         from hardware.state import ScreenState
         return {"enabled": ui.display_enabled, "brightness": ui.brightness,
-                "screen": ui.state_manager.state.name, "screens": [s.name for s in ScreenState]}
+                "screen": ui.state_manager.state.name, "screens": [s.name for s in ScreenState],
+                "simulated_input": sim_buttons() is not None}
+
+    def sim_buttons():
+        buttons = getattr(svc.ui, "buttons", None)
+        return buttons if getattr(buttons, "simulated", False) else None
 
     @app.get("/api/display")
     def get_display():
         return display_state()
+
+    @app.get("/api/display/frame.png")
+    def display_frame():
+        """ What the TFT shows: the virtual display's latest frame, else a fresh render """
+        ui = svc.ui
+        if ui is None:
+            raise HTTPException(503, "Display not available")
+        get_frame = getattr(getattr(ui, "screen", None), "get_frame", None)
+        frame = get_frame() if get_frame else None
+        if frame is None and hasattr(ui, "render"):
+            frame = ui.render()
+        if frame is None:
+            raise HTTPException(404, "No frame rendered yet")
+        buf = io.BytesIO()
+        frame.convert("RGB").save(buf, format="PNG")
+        return Response(buf.getvalue(), media_type="image/png", headers={"Cache-Control": "no-store"})
+
+    @app.post("/api/sim/input")
+    def sim_input(body: SimInputBody):
+        """ Simulated TFT button events (sim input backend only) """
+        buttons = sim_buttons()
+        if buttons is None:
+            raise HTTPException(409, "Simulated input is only available with the 'sim' input backend")
+        if body.action == "hold":
+            buttons.hold(body.button, body.seconds)
+        else:
+            getattr(buttons, body.action)(body.button)
+        return {"ok": True, "button": body.button, "action": body.action}
 
     @app.put("/api/display")
     def put_display(body: DisplayBody):
@@ -440,6 +481,8 @@ def create_app(svc: Services) -> FastAPI:
     # ---------- system ----------
     @app.post("/api/system/{action}")
     def system(action: Literal["restart", "shutdown", "reboot"]):
+        if not platform_info.is_linux():
+            raise HTTPException(501, f"'{action}' is not supported on {platform_info.os_name()} (Linux only)")
         cmd = {"restart": ["sudo", "systemctl", "restart", "astroflo"],
                "reboot": ["sudo", "reboot"],
                "shutdown": ["sudo", "shutdown", "-h", "now"]}[action]

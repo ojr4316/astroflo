@@ -32,7 +32,6 @@ class RPiCamera(Camera):
 
         if self.camera_state.fake_image_test:
             frame = np.array(Image.open("./test_data/test.jpg"))
-            self.queue.put(frame)
             return frame
 
         self.save_frame(frame)

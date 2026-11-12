@@ -23,6 +23,22 @@ class FinderCameraSettings(BaseModel):
     exposure_us: int = Field(600_000, ge=100, le=30_000_000)
     gain: float = Field(16.0, ge=0, le=64)
     fake_image_test: bool = False
+    # Simulated finder camera: image file or folder replayed in name order (relative paths are from the repo root)
+    source: str = "test_data"
+    simulate_exposure: bool = True
+
+
+class RuntimeSettings(BaseModel):
+    """ Hardware profile and per-component backends. `auto` follows the profile (see backends.py). """
+    profile: Literal["auto", "pi", "sim"] = "auto"
+    finder_camera: Literal["auto", "rpi", "images"] = "auto"
+    imaging_camera: Literal["auto", "sv105", "fake", "none"] = "auto"
+    solver: Literal["auto", "fake", "tetra3", "cedar"] = "auto"
+    display: Literal["auto", "tft", "virtual"] = "auto"
+    input: Literal["auto", "gpio", "sim"] = "auto"
+    cedar_path: str = ""  # cedar-solve checkout (overridden by ASTROFLO_CEDAR_PATH)
+    fake_solve_ra: float = Field(56.74689, ge=0, lt=360)  # FakeSolver result (default: Pleiades)
+    fake_solve_dec: float = Field(24.1160, ge=-90, le=90)
 
 
 class ImagingCameraSettings(BaseModel):
@@ -77,6 +93,7 @@ class WebSettings(BaseModel):
 
 
 class Settings(BaseModel):
+    runtime: RuntimeSettings = RuntimeSettings()
     optics: OpticsSettings = OpticsSettings()
     finder_camera: FinderCameraSettings = FinderCameraSettings()
     imaging_camera: ImagingCameraSettings = ImagingCameraSettings()
@@ -116,9 +133,12 @@ def deep_merge(base: dict, update: dict) -> dict:
 
 
 class SettingsStore:
-    def __init__(self, path: str = settings_file, legacy_path: Optional[str] = legacy_settings_file):
-        self.path = path
-        self.legacy_path = legacy_path
+    _DEFAULT = object()
+
+    def __init__(self, path: Optional[str] = None, legacy_path: Optional[str] = _DEFAULT):
+        # Resolved at call time so tests can redirect the module-level paths
+        self.path = path if path is not None else settings_file
+        self.legacy_path = legacy_settings_file if legacy_path is SettingsStore._DEFAULT else legacy_path
         self.lock = threading.Lock()
         self.settings = self.load()
 

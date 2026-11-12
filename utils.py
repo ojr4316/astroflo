@@ -7,10 +7,9 @@ from astropy.coordinates import SkyCoord, AltAz, EarthLocation
 from astropy.time import Time
 import astropy.units as u
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+from platform_info import is_pi  # noqa: F401  (re-exported for existing imports)
 
-def is_pi() -> bool:
-    return os.name != 'nt' and os.uname().nodename == "rpi"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     
 def plt_to_img(fig) -> Image.Image:
     buf = io.BytesIO()

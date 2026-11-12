@@ -1,0 +1,4 @@
+# Optional: real plate solving (tetra3 runs on any OS; Cedar client also needs cedar-detect-server, Pi only)
+git+https://github.com/esa/tetra3.git
+grpcio
+protobuf

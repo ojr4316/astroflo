@@ -1,29 +1,32 @@
+""" Cedar (cedar-detect centroiding + cedar-solve tetra3). Pi/Linux only: imported lazily by backends.py.
+The cedar-solve checkout path comes from ASTROFLO_CEDAR_PATH or settings.runtime.cedar_path. """
 import os
 import sys
-import pathlib
-from PIL import Image
 import cv2
-import time
 import math
 import numpy as np
 np.math = math
 from solve.solver import Solver
-
-# Make sure you're importing the package, not the module
-if os.name == 'nt':
-    sys.path.insert(0, str(pathlib.Path("C:/Users/314ow/cedar-solve").resolve()))
-else:
-    sys.path.insert(0, str(pathlib.Path("/home/owen/cedar-solve").resolve()))
-
-from tetra3.tetra3 import Tetra3
-from tetra3 import cedar_detect_client
 from observation_context import SolverState, TelescopeState
+
+
+def import_cedar(cedar_path: str = None):
+    """ Put the cedar-solve checkout first on sys.path (so its tetra3 package wins) and import it """
+    if cedar_path and os.path.isdir(cedar_path):
+        path = os.path.abspath(cedar_path)
+        if path not in sys.path:
+            sys.path.insert(0, path)
+    from tetra3.tetra3 import Tetra3
+    from tetra3 import cedar_detect_client
+    return Tetra3, cedar_detect_client
+
 
 # Actually Cedar
 class CedarSolver(Solver):
 
-    def __init__(self, solver_state: SolverState, telescope_state: TelescopeState):
+    def __init__(self, solver_state: SolverState, telescope_state: TelescopeState, cedar_path: str = None):
         super().__init__(solver_state, telescope_state)
+        Tetra3, cedar_detect_client = import_cedar(cedar_path)
         self.t3 = Tetra3()
         self.cedar_detect = cedar_detect_client.CedarDetectClient()
 

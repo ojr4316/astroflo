@@ -1,12 +1,23 @@
+""" astroflo entry point.
+
+    python main.py                        # auto: real hardware on the Pi, simulated hardware elsewhere
+    python main.py --profile sim          # simulated cameras/solver/display/buttons on any OS
+    python main.py --profile sim --duration 10 --no-web
+"""
 import os
-import time
-from PIL import Image
+
+# Off-screen rendering only (frames go to the TFT/virtual display/web as images): Agg is the
+# thread-safe choice on every OS. Set MPLBACKEND to override. Must happen before pyplot loads.
+os.environ.setdefault("MPLBACKEND", "Agg")
+
+import argparse
+import sys
 import threading
-from observation_context import ObservationContext, CameraState, SolverState, TelescopeState, TargetState
-from capture.fake_camera import FakeCamera
-from solve.fake_solver import FakeSolver
+import time
+
+import backends
+from observation_context import ObservationContext, TelescopeState, TargetState
 from hardware.ui import UIManager
-from utils import is_pi, BASE_DIR
 from astronomy.catalog import Catalog
 from astronomy.starfield import StarfieldRenderer
 from analyzer import analyzer
@@ -14,40 +25,9 @@ from config import SettingsStore
 from capture.capture_store import CaptureStore
 from capture.imaging import ImagingController
 from capture.remote_imaging import ImagingController as RemoteImagingController
-import matplotlib
-import numpy as np
-
-# For Star Rendering, Windows really doesn't like Agg for multi-threading
-if os.name != 'nt':
-    matplotlib.use("Agg")
-    # Mac and Linux NEED Agg for multi-threading
 
 drift_field = True
 
-def build_camera(camera_state: CameraState):
-    if is_pi():
-        from capture.rpi_camera import RPiCamera
-        return RPiCamera(camera_state)
-    else:
-        file = os.path.normpath(os.path.join(
-            BASE_DIR, "test_data", "out_of_focus.jpg"))
-        fake_feed = [np.array(Image.open(file))]
-        return FakeCamera(camera_state, fake_feed)
-
-def build_imaging_camera():
-    if is_pi():
-        from capture.sv105_camera import SV105Camera
-        return SV105Camera()
-    else:
-        from capture.fake_imaging_camera import FakeImagingCamera
-        return FakeImagingCamera()
-
-def build_solver(solver_state: SolverState, telescope_state: TelescopeState):
-    if is_pi():
-        from solve.cedar import CedarSolver
-        return CedarSolver(solver_state, telescope_state)
-    else:
-        return FakeSolver(solver_state, telescope_state)
 
 def try_set_target(catalog: Catalog, target_state: TargetState, name: str):
     target = catalog.search_by_name(name, False)
@@ -58,13 +38,15 @@ def try_set_target(catalog: Catalog, target_state: TargetState, name: str):
     else:
         print(f"Target '{name}' not found in catalog.")
 
+
 def try_set_planet(catalog: Catalog, target_state: TargetState, name: str):
     planet = catalog.get_current_position(name)
-    if planet is not None:
+    if planet:
         target_state.set_target(planet['RAdeg'], planet['DEdeg'], planet['Name'])
         print(f"Target set to {planet['Name']} at RA: {planet['RAdeg']}, DEC: {planet['DEdeg']}")
     else:
         print(f"Planet '{name}' not found in catalog.")
+
 
 last_time = None
 def running(telescope_state: TelescopeState):
@@ -72,11 +54,10 @@ def running(telescope_state: TelescopeState):
     now = time.perf_counter()
     delta = now - last_time if last_time is not None else 0
     last_time = now
-    last_time = time.perf_counter()
     if drift_field:
         telescope_state.sky_drift(delta)
-        time.sleep(delta)
-    time.sleep(0.01)
+    time.sleep(0.05)
+
 
 def start_web(ctx, settings, catalog, camera, ui, starfield):
     global drift_field
@@ -105,9 +86,40 @@ def start_web(ctx, settings, catalog, camera, ui, starfield):
     start_web_server(svc)
     return svc
 
-def main():
+
+def parse_args(argv=None):
+    p = argparse.ArgumentParser(description="astroflo telescope assistant")
+    p.add_argument("--profile", choices=["auto", *backends.PROFILES],
+                   help="hardware profile (default: ASTROFLO_PROFILE, then settings, then Pi detection)")
+    p.add_argument("--duration", type=float, default=None, help="exit after this many seconds")
+    p.add_argument("--no-web", action="store_true", help="do not start the web server")
+    p.add_argument("--port", type=int, default=None, help="web server port (overrides settings)")
+    p.add_argument("--settings", default=None, help="settings.json path (default: repo settings.json)")
+    return p.parse_args(argv)
+
+
+def start_thread(threads, target, *args, name=None):
+    thread = threading.Thread(target=target, args=args, name=name, daemon=True)
+    thread.start()
+    threads.append(thread)
+    return thread
+
+
+def main(argv=None) -> int:
     global drift_field
-    settings = SettingsStore()
+    args = parse_args(argv)
+
+    settings = SettingsStore(args.settings) if args.settings else SettingsStore()
+    if args.port:
+        settings.settings.web.port = args.port  # not persisted
+    try:
+        chosen = backends.resolve_backends(settings.settings, args.profile)
+    except (ValueError, backends.BackendUnavailable) as e:
+        print(f"Startup failed: {e}", file=sys.stderr)
+        return 2
+    print(f"astroflo profile: {chosen['profile']}" + (" (simulating hardware)" if chosen["profile"] == "sim" else "")
+          + " | " + ", ".join(f"{c}={chosen[c]}" for c in backends.COMPONENTS))
+
     ctx = ObservationContext()
     ctx.apply_settings(settings.settings)
     drift_field = settings.settings.integrations.sky_drift
@@ -123,42 +135,54 @@ def main():
         target_state=ctx.target_state
     )
 
-    ui = UIManager(ctx, starfield)
+    def build(component, **kwargs):
+        return backends.build(component, chosen[component], ctx, settings.settings, **kwargs)
+
+    display = build("display")
+    ui = UIManager(ctx, starfield, display=display, buttons=build("input", display=display))
     ui.set_display(settings.settings.display.enabled, settings.settings.display.brightness)
 
-    camera = build_camera(ctx.camera_state)
-    solver = build_solver(ctx.solver_state, ctx.telescope_state)
+    camera = build("finder_camera")
+    solver = build("solver")
+    stop_event = ui.stop_event
 
-    capture_thread = threading.Thread(target=camera.capturer)
-    capture_thread.start()
+    threads = []
+    start_thread(threads, camera.capturer, name="finder-camera")
+    start_thread(threads, solver.solver, camera.queue, stop_event, name="solver")
+    start_thread(threads, ui.draw_screen, name="ui-draw")
+    start_thread(threads, ui.handle_input, name="ui-input")
+    start_thread(threads, analyzer.process, name="analyzer")
 
-    solver_thread = threading.Thread(
-        target=solver.solver, args=(camera.queue,))
-    solver_thread.start()
-
-    ui_thread = threading.Thread(target=ui.draw_screen)
-    ui_thread.start()
-
-    input_thread = threading.Thread(target=ui.handle_input)
-    input_thread.start()
-
-    analyzer_thread = threading.Thread(target=analyzer.process)
-    analyzer_thread.start()
-
-    imaging = ImagingController(build_imaging_camera(), ctx)
-    imaging_thread = threading.Thread(target=imaging.run, daemon=True)
-    imaging_thread.start()
+    imaging_camera = build("imaging_camera")
+    imaging = None
+    if imaging_camera is not None:
+        imaging = ImagingController(imaging_camera, ctx)
+        start_thread(threads, imaging.run, name="imaging")
 
     if settings.settings.integrations.stellarium_enabled:
         ctx.telescope_state.stel.run_server()
 
-    start_web(ctx, settings, catalog, camera, ui, starfield)
+    if not args.no_web:
+        start_web(ctx, settings, catalog, camera, ui, starfield)
 
+    deadline = None if args.duration is None else time.monotonic() + args.duration
     try:
-        while True:
+        while deadline is None or time.monotonic() < deadline:
             running(ctx.telescope_state)
     except KeyboardInterrupt:
-        ui_thread.join()
+        print("Interrupted")
+    finally:
+        print("Shutting down")
+        stop_event.set()
+        camera.running = False
+        if imaging is not None:
+            imaging.stop()
+        join_deadline = time.monotonic() + 3.0  # daemon threads still blocked after this die with the process
+        for thread in threads:
+            thread.join(timeout=max(0.0, join_deadline - time.monotonic()))
+        print(f"Stopped (solves: {solver.solves}, screen frames: {getattr(display, 'frame_count', 'n/a')})")
+    return 0
+
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

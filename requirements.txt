@@ -1,28 +1,23 @@
+# Core dependencies: installable from PyPI wheels on Linux, macOS and Windows.
+# Pi hardware extras: requirements_pi.txt. Real plate solvers: requirements-solver.txt.
 numpy
-requests
-matplotlib
 scipy
-photutils
-pytest
+requests
 pytz
+pydantic>=2
 
 # Imaging
-Pillow 
-mahotas
-opencv-python
+Pillow
+opencv-python-headless
+matplotlib
+photutils
 
 # Astronomy
-alpyca
+astropy
 skyfield
-starplot
-git+https://github.com/esa/tetra3.git
+alpyca
 
-# Cedar dependencies
-grpcio
-google
-protobuf
 # Web control
 fastapi
 uvicorn
 websockets
-httpx  # tests (fastapi TestClient)

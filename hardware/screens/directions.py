@@ -12,6 +12,7 @@ class DirectionsScreen(Screen):
 
     def __init__(self, ui_state: UIState, screen_input, env: Environment, telescope_state: TelescopeState, target_state: TargetState, solver_state: SolverState):
         super().__init__(ui_state, screen_input)
+        self.env = env
         self.telescope_state = telescope_state
         self.target_state = target_state
         self.solver_state = solver_state

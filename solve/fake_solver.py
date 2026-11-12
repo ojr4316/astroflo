@@ -19,13 +19,16 @@ s = (2.33984, -1.4648)
 c = (17.15721, -5.3056)
 
 class FakeSolver(Solver):
-    
-    target = pleiades
-    
-    def __init__(self, solver_state: SolverState, telescope_state: TelescopeState):
+    """ Always "solves" to a fixed sky position (default: Pleiades) """
+
+    def __init__(self, solver_state: SolverState, telescope_state: TelescopeState, target=pleiades,
+                 roll: float = 0.0, delay_s: float = 0.3):
         super().__init__(solver_state, telescope_state)
+        self.target = tuple(target)
+        self.roll = roll
+        self.delay_s = delay_s
 
     def solve(self, image):
-        time.sleep(0.3)
-        #self.target = (self.target[0] - 0.1, self.target[1] + 0.3)
-        return (self.target, 0)
+        if self.delay_s:
+            time.sleep(self.delay_s)
+        return (self.target, self.roll)

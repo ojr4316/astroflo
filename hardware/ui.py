@@ -1,8 +1,7 @@
 """ State Manager for UI, Controls creating and rendering images, and managing input """
+import threading
 import time
-import os
 from hardware.input import Input
-from hardware.adafruit_tft_bonnet import AdafruitTFTBonnet
 
 from observation_context import ObservationContext
 from hardware.state import UIState, ScreenState
@@ -15,7 +14,8 @@ from astronomy.starfield import StarfieldRenderer
 init_text = ['\n', '\n', "~ ASTROFLO ~", "Calibrating camera", "and loading modified", "Tycho catalog.", '\n', '\n', "Please wait 5-10 seconds"]
 
 class UIManager:
-    def __init__(self, context: ObservationContext, starfield: StarfieldRenderer):
+    def __init__(self, context: ObservationContext, starfield: StarfieldRenderer, display=None, buttons=None):
+        """ display: TFTDisplay or VirtualDisplay (default: virtual); buttons: DisplayButtons or SimInput (default: sim) """
         self.state_manager = UIState()
         self.state_manager.change_input = self.change_input
         self.context = context
@@ -23,7 +23,15 @@ class UIManager:
         renderer.status_provider = lambda: context.imaging_state.connected
 
         self.screen_input = Input()
-        self.screen = AdafruitTFTBonnet()
+        if display is None:
+            from hardware.virtual_display import VirtualDisplay
+            display = VirtualDisplay()
+        if buttons is None:
+            from hardware.sim_input import SimInput
+            buttons = SimInput()
+        self.screen = display
+        self.buttons = buttons
+        self.stop_event = threading.Event()
         self.display_enabled = True
         self.brightness = 0.5
         self.screen.set_brightness(self.brightness)
@@ -59,17 +67,26 @@ class UIManager:
         return self.current_screen().render()
     
     def handle_input(self):
-        while True:
-            self.screen.handle_input(self.screen_input)
+        while not self.stop_event.is_set():
+            self.buttons.read_buttons(self.screen_input)
             time.sleep(0.01)
 
+    def draw_once(self):
+        if self.display_enabled:
+            self.screen.draw_screen(self.render())
+
     def draw_screen(self):
-        
-        if os.name == 'nt' or os.uname().nodename != "rpi":
-            return
-        while True:
+        """ Render loop for the TFT or the virtual display """
+        while not self.stop_event.is_set():
             if self.display_enabled:
-                self.screen.draw_screen(self.render())
+                try:
+                    self.draw_once()
+                except Exception as e:  # keep the loop alive if one screen fails to render
+                    print(f"Screen render failed: {e}")
+                    time.sleep(0.5)
             else:
                 time.sleep(0.2) # Display off: skip rendering, save CPU
-            time.sleep(0.01)
+            time.sleep(0.01)
+
+    def stop(self):
+        self.stop_event.set()

@@ -3,13 +3,14 @@ import os
 import numpy as np
 from utils import BASE_DIR, is_within_radius, radec_to_altaz
 from astropy.table import Table
-from skyfield.api import load
+from skyfield.api import load_file
 from observation_context import Environment
 from skyfield.positionlib import ICRF
 
 catalog_file = os.path.normpath(os.path.join(BASE_DIR, 'data', 'tyc.fits'))
 ephemeris_file = os.path.join(BASE_DIR, 'data', "de440s.bsp")
 asteroids_file = os.path.join(BASE_DIR, 'data', "sb441-n16.bsp")
+EPHEMERIS_HELP = "download from https://ssd.jpl.nasa.gov/ftp/eph/ into data/ (see build/SETUP.md)"
 PLANET_NAMES = ["MERCURY", "VENUS", "MARS", "JUPITER", "SATURN", "URANUS", "NEPTUNE", "PLUTO", "SUN", "MOON"]
 
 def alphabetical(targets):
@@ -56,6 +57,18 @@ def load_stars():
         print(f"Error loading stars catalog: {e}")
         return []
 
+def load_kernel(path: str, feature: str):
+    """ Load a local SPICE kernel; never downloads. Missing file disables `feature`. """
+    if not os.path.exists(path):
+        print(f"Ephemeris file {path} not found: {feature} disabled ({EPHEMERIS_HELP})")
+        return None
+    try:
+        return load_file(path)
+    except Exception as e:
+        print(f"Could not load ephemeris {path} ({e}): {feature} disabled")
+        return None
+
+
 class Catalog:
 
     def __init__(self, env: Environment):
@@ -66,12 +79,16 @@ class Catalog:
     
     def load(self):
         self.stars: Table = load_stars()
-        self.planets: dict = load(ephemeris_file)
-        self.asteroids: dict = load(asteroids_file)
+        self.planets = load_kernel(ephemeris_file, "planet targets and solar-system objects")
+        self.asteroids = load_kernel(asteroids_file, "asteroid targets") if self.planets is not None else None
+
+    @property
+    def has_ephemeris(self) -> bool:
+        return self.planets is not None
 
     def setup(self):
-        self.earth = self.planets["EARTH"]
-        self.topocentric = self.earth + self.env.skyfield_location
+        self.earth = self.planets["EARTH"] if self.has_ephemeris else None
+        self.topocentric = (self.earth + self.env.skyfield_location) if self.has_ephemeris else None
         self.planet_cache = {}
         self.cache_time = None
         self.cache_duration = 3
@@ -125,11 +142,15 @@ class Catalog:
     
     def get_current_positions(self):
         positions = {}
-        
+        if not self.has_ephemeris:
+            return positions
+
         for planet_name in PLANET_NAMES:
-            positions[planet_name] = self.get_current_position(planet_name)
-        
-        for target_id in self.asteroids.names():
+            position = self.get_current_position(planet_name)
+            if position:
+                positions[planet_name] = position
+
+        for target_id in (self.asteroids.names() if self.asteroids is not None else []):
             if target_id == 10: 
                 continue # Skip Sun!
             asteroid_position = self.get_current_position_asteroid(target_id)
@@ -139,6 +160,8 @@ class Catalog:
         return positions
     
     def get_current_position(self, planet_name: str):
+        if not self.has_ephemeris:
+            return None
         try:
             planet = self.get_planet(planet_name)
             geocentric = self.here().observe(planet).apparent()

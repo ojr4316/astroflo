@@ -13,6 +13,8 @@ class ScreenState(Enum):
     IMAGING = 8
 
 class UIState:
+    debounce_s = 0.5  # pause after a page change so one press doesn't change pages twice
+
     def __init__(self):
         self.state = ScreenState.MAIN_MENU
         self.screens = {}
@@ -22,5 +24,6 @@ class UIState:
         self.state = screen
         self.change_input(screen)
         
-        time.sleep(0.5) # prevent multiple page changes
+        if self.debounce_s:
+            time.sleep(self.debounce_s) # prevent multiple page changes
 

@@ -2,7 +2,11 @@ from feedback.metrics.QualityMetric import Metric
 from feedback.rules.ClassificationRule import ClassificationRule
 
 class CapOnRule(ClassificationRule):
-    def __init__(self, min_bg: float = 0.01, priority: int = 100):
+    id = "cap_on"
+    message = "Lens cap on?"
+    severity = "error"
+
+    def __init__(self, min_bg: float = 0.01, priority: int = 110):
         super().__init__(priority)
         self.min_bg = min_bg
 

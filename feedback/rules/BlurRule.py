@@ -2,6 +2,10 @@ from feedback.metrics.QualityMetric import Metric
 from feedback.rules.ClassificationRule import ClassificationRule
 
 class BlurRule(ClassificationRule):
+    id = "blurred"
+    message = "Out of focus"
+    severity = "warning"
+
     def __init__(self, sharpness_threshold = 0.005, priority: int = 10):
         super().__init__(priority)
         self.sharpness_threshold = sharpness_threshold

@@ -60,7 +60,21 @@ def main():
             time.sleep(0.5)
     threading.Thread(target=sim, daemon=True).start()
 
-    svc = Services(ctx=ctx, settings=settings, store=store, imaging=imaging, catalog=DemoCatalog(), ui=DemoUI())
+    from analyzer import Analyzer
+    analyzer = Analyzer()
+    # DEV_FEEDBACK_FRAME=image_overexposed.jpg (from test_data/) forces a warning
+    fb_frame = os.environ.get("DEV_FEEDBACK_FRAME")
+    src = Image.open(os.path.join(BASE_DIR, "test_data", fb_frame)) if fb_frame else Image.fromarray(frame)
+    gray = np.array(src.convert("L")).astype(np.float32)
+
+    def analyse():  # classify the demo frame so image feedback shows in the UI
+        while True:
+            analyzer.set_feedback(analyzer.feedback.classify(gray))
+            time.sleep(1.0)
+    threading.Thread(target=analyse, daemon=True).start()
+
+    svc = Services(ctx=ctx, settings=settings, store=store, imaging=imaging, catalog=DemoCatalog(), ui=DemoUI(),
+                   analyzer=analyzer)
     uvicorn.run(create_app(svc), host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
 
 

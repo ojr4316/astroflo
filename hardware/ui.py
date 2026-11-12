@@ -21,6 +21,8 @@ class UIManager:
         self.context = context
         self.starfield = starfield
         renderer.status_provider = lambda: context.imaging_state.connected
+        from analyzer import analyzer
+        renderer.feedback_provider = analyzer.get_feedback
 
         self.screen_input = Input()
         self.screen = AdafruitTFTBonnet()
@@ -72,4 +74,4 @@ class UIManager:
                 self.screen.draw_screen(self.render())
             else:
                 time.sleep(0.2) # Display off: skip rendering, save CPU
-            time.sleep(0.01)
+            time.sleep(0.01)

@@ -1,7 +1,8 @@
 """ Rule-based feedback for astronomical imaging """
 import numpy as np
 import cv2
-from typing import Dict, List, Tuple
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional
 
 from feedback.metrics.QualityMetric import QualityMetric, Mean, StdDev, Saturated, Sharpness, SignalToNoiseRatio
 from feedback.metrics.StarCount import StarCount
@@ -10,6 +11,22 @@ from feedback.rules.CapOnRule import CapOnRule
 from feedback.rules.OverExposedRule import OverExposedRule
 from feedback.rules.BlurRule import BlurRule
 from feedback.rules.ObjectBlockingField import ObjectBlockingField
+
+@dataclass(frozen=True)
+class FeedbackResult:
+    """ Outcome of classifying one frame. severity is None when no rule matched. """
+    id: str
+    message: str
+    severity: Optional[str] = None
+    metrics: Dict[str, float] = field(default_factory=dict)
+
+    @property
+    def ok(self) -> bool:
+        return self.id == OK.id
+
+
+OK = FeedbackResult("ok", "OK")
+
 
 class ImagingFeedback:
     def __init__(self):
@@ -46,7 +63,7 @@ class ImagingFeedback:
             metrics[name] = metric.compute(image)
         return metrics
     
-    def classify(self, image: np.ndarray) -> Tuple[str, Dict[str, float]]:
+    def classify(self, image: np.ndarray) -> FeedbackResult:
         # Normalize
         if image.max() > 1.0:
             normalized_image = image / image.max()
@@ -58,13 +75,13 @@ class ImagingFeedback:
             normalized_image = cv2.resize(normalized_image, (1000, 1000), interpolation=cv2.INTER_AREA)
         
         metrics = self.compute_metrics(normalized_image)
-        
-        # Evaluate all rules in priority order
+        named = {getattr(k, "value", k): float(v) for k, v in metrics.items()}
+
+        # Evaluate all rules in priority order; first match wins
         for rule in self.rules:
             if rule.evaluate(metrics):
-                return rule.name, metrics
-        
-        # If no rules match
-        return "NONE", metrics
+                return FeedbackResult(rule.id, rule.message, rule.severity, named)
+
+        return FeedbackResult(OK.id, OK.message, None, named)
     
 feedback = ImagingFeedback()

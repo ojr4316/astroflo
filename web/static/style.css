@@ -60,3 +60,8 @@ fieldset input:not([type=checkbox]), fieldset select { width: 160px; }
 .sticky { position: sticky; bottom: 8px; }
 #toast { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); background: var(--card); border: 1px solid var(--line); padding: 8px 14px; border-radius: 8px; opacity: 0; transition: opacity .2s; pointer-events: none; }
 #toast.show { opacity: 1; }
+.banner { border: 1px solid; border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; font-weight: 600; }
+.banner[hidden] { display: none; }
+.banner.warning { --warn: #d29922; color: var(--warn); border-color: var(--warn); background: color-mix(in srgb, var(--warn) 12%, transparent); }
+.banner.error { color: var(--danger); border-color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, transparent); }
+:root[data-night="1"] .banner.warning { --warn: var(--fg); }

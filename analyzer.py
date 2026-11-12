@@ -1,8 +1,9 @@
 import time
+import threading
 import numpy as np
 import cv2
 from queue import Queue
-from feedback.image_feedback import ImagingFeedback
+from feedback.image_feedback import ImagingFeedback, FeedbackResult, OK
 from PIL import Image
 
 class Analyzer:
@@ -16,6 +17,10 @@ class Analyzer:
         self.lowest_fwhm = float('inf')
 
         self.feedback = ImagingFeedback()
+        self.feedback_max_age = 5.0  # seconds a result stays current without a newer frame
+        self._feedback_lock = threading.Lock()
+        self._feedback_result = None
+        self._feedback_time = None
 
     def calculate_background_cheap(self, image, level = 5):
         background = cv2.medianBlur(image, level)
@@ -164,20 +169,28 @@ class Analyzer:
             'fwhm': self.fwhm_values[latest_index]
         }
     
-    def add_feedback(self, feedback: str, expires: float = 5.0):
-        self.feedback_text = feedback
-        self.feedback_expires = time.time() + expires
+    def set_feedback(self, result: FeedbackResult):
+        """ Record the latest classification (including OK, so good frames clear warnings). """
+        with self._feedback_lock:
+            self._feedback_result = result
+            self._feedback_time = time.time()
 
-    def clear_feedback(self):
-        self.feedback_text = None
-        self.feedback_expires = None
+    def get_feedback(self) -> FeedbackResult:
+        """ Current feedback; OK before any frame or once the last result is stale. """
+        result, age = self.get_feedback_with_age()
+        return result
 
-    def get_feedback(self):
-        if self.feedback_text and (self.feedback_expires is None or time.time() < self.feedback_expires):
-            return self.feedback_text
-        self.clear_feedback()
-        return None
-    
+    def get_feedback_with_age(self):
+        """ (result, age in seconds or None). Stale or missing results read as OK. """
+        with self._feedback_lock:
+            result, stamp = self._feedback_result, self._feedback_time
+        if result is None:
+            return OK, None
+        age = time.time() - stamp
+        if age > self.feedback_max_age:
+            return OK, age
+        return result, age
+
     def process(self):
         while True:
             image = self.queue.get(block=True)
@@ -186,8 +199,6 @@ class Analyzer:
             image = Image.fromarray(image).convert("L")
             image = np.array(image)
             self.add_image(image)
-            feedback, metrics = self.feedback.classify(image)
-            if feedback != "NONE":
-                self.add_feedback(feedback)
+            self.set_feedback(self.feedback.classify(image))
 
 analyzer = Analyzer()

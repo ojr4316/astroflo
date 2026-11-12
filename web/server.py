@@ -135,6 +135,11 @@ def create_app(svc: Services) -> FastAPI:
             focus = {"fwhm": float(an.fwhm_values[-1]),
                      "min_fwhm": None if an.lowest_fwhm == float("inf") else float(an.lowest_fwhm),
                      "history": [float(v) for v in an.fwhm_values[-50:]]}
+        fb, fb_age = an.get_feedback_with_age() if an is not None else (None, None)
+        feedback = {"id": "ok", "message": "OK", "severity": None, "age_s": None, "metrics": {}}
+        if fb is not None:
+            feedback = {"id": fb.id, "message": fb.message, "severity": fb.severity,
+                        "age_s": None if fb_age is None else float(fb_age), "metrics": dict(fb.metrics)}
         ui = svc.ui
         return {
             "time": time.time(),
@@ -149,6 +154,7 @@ def create_app(svc: Services) -> FastAPI:
             "display": None if ui is None else {"enabled": ui.display_enabled, "brightness": ui.brightness,
                                                  "screen": ui.state_manager.state.name},
             "focus": focus,
+            "feedback": feedback,
             "optics": {"magnification": float(ctx.telescope_optics.magnification()),
                        "true_fov_deg": float(ctx.telescope_optics.field_radius() * 2),
                        "limiting_mag": float(ctx.telescope_optics.get_limiting_magnitude())},

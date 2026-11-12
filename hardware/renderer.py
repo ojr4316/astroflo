@@ -36,7 +36,32 @@ def draw_status_dot(img: Image.Image):
     box = [WIDTH - m - 2 * r, m, WIDTH - m, m + 2 * r]
     draw.ellipse(box, fill=COLOR_STATUS_OK if connected else COLOR_STATUS_BAD, outline=COLOR_BLACK)
 
+COLOR_FEEDBACK_WARNING = (230, 160, 0)
+COLOR_FEEDBACK_ERROR = (220, 0, 0)
+FEEDBACK_STRIP_HEIGHT = 18
+
+# Callable returning the current image feedback (object with .id, .message, .severity). None hides the strip.
+feedback_provider = None
+
+def draw_feedback_strip(img: Image.Image):
+    """ One-line image-feedback warning along the bottom edge; drawn only while a warning is active. """
+    if feedback_provider is None:
+        return
+    try:
+        fb = feedback_provider()
+        if fb is None or fb.id == "ok":
+            return
+        message, severity = str(fb.message), fb.severity
+    except Exception:
+        return
+    draw = ImageDraw.Draw(img)
+    top = HEIGHT - FEEDBACK_STRIP_HEIGHT
+    fill = COLOR_FEEDBACK_ERROR if severity == "error" else COLOR_FEEDBACK_WARNING
+    draw.rectangle([0, top, WIDTH, HEIGHT], fill=fill)
+    draw.text((4, top + 2), message, font=small_font, fill=COLOR_BLACK if severity != "error" else COLOR_WHITE)
+
 def _transform(img): # match orientation of the physical screen # TODO: implement at other layer?
+    draw_feedback_strip(img)
     draw_status_dot(img)
     return img.rotate(-90)
 

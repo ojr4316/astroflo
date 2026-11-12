@@ -21,6 +21,8 @@ class UIManager:
         self.context = context
         self.starfield = starfield
         renderer.status_provider = lambda: context.imaging_state.connected
+        from analyzer import analyzer
+        renderer.feedback_provider = analyzer.get_feedback
 
         self.screen_input = Input()
         if display is None:

@@ -74,6 +74,21 @@ def test_index_and_state(env):
     assert s["position"]["ra"] == 279.0 and "alt" in s["position"]
 
 
+def test_state_feedback(env):
+    from analyzer import Analyzer
+    from feedback.image_feedback import FeedbackResult
+    client, svc = env
+    assert client.get("/api/state").json()["feedback"] == {"id": "ok", "message": "OK", "severity": None,
+                                                           "age_s": None, "metrics": {}}
+    svc.analyzer = Analyzer()
+    fb = client.get("/api/state").json()["feedback"]
+    assert fb["id"] == "ok" and fb["metrics"] == {}
+    svc.analyzer.set_feedback(FeedbackResult("over_exposed", "Over-exposed", "warning", {"Saturated": 0.2}))
+    fb = client.get("/api/state").json()["feedback"]
+    assert fb["id"] == "over_exposed" and fb["severity"] == "warning"
+    assert fb["metrics"]["Saturated"] == 0.2 and fb["age_s"] >= 0
+
+
 def test_targets_and_guidance(env):
     client, svc = env
     r = client.get("/api/targets", params={"type": "stars", "q": "veg"}).json()

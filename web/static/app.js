@@ -91,6 +91,11 @@ function render() {
     $("#arrow-dist").textContent = `${num(t.distance_deg)}° away`;
   } else $("#arrow-wrap").style.display = "none";
 
+  const fb = s.feedback, fbEl = $("#feedback");
+  const warn = fb && fb.id !== "ok";
+  fbEl.hidden = !warn;
+  if (warn) { fbEl.textContent = fb.message; fbEl.className = `banner ${fb.severity === "error" ? "error" : "warning"}`; }
+
   const f = s.focus;
   $("#focus").textContent = f ? `FWHM ${num(f.fwhm)} px · best ${num(f.min_fwhm)} px` : "—";
   drawSpark($("#fwhm"), f?.history || []);
